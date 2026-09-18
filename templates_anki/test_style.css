@@ -1,0 +1,9 @@
+/* Minimal test style */
+.card {
+    font-family: Arial, sans-serif;
+    font-size: 20px;
+    text-align: center;
+    color: #333;
+    background-color: #fcfcfc;
+    padding: 20px;
+}

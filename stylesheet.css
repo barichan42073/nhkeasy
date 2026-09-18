@@ -1,0 +1,46 @@
+.bilingual-block {
+  break-inside: avoid;
+  display: block;
+  margin-bottom: 2em;
+  page-break-inside: avoid;
+}
+.calibre {
+  display: block;
+  font-family: "Noto Sans CJK JP", "Noto Sans JP", sans-serif;
+  font-size: 1.125em;
+  line-height: 1.7;
+  margin: 0 5pt;
+  padding: 4% 0;
+}
+.calibre1 {
+  display: block;
+  font-size: 1.25926em;
+  font-weight: bold;
+  text-align: center;
+  margin: 1em 0 0.5em;
+}
+.calibre2 {
+  color: #555;
+  display: block;
+  font-size: 1em;
+  font-weight: normal;
+  text-align: center;
+  margin: 0.83em 0 2em;
+}
+.source-jp {
+  color: #000;
+  display: block;
+  text-align: justify;
+  text-indent: 1em;
+  margin: 0 0 0.3em;
+}
+.translation-en {
+  color: #555;
+  display: block;
+  font-size: 0.88889em;
+  line-height: 1.5;
+  padding-left: 1.2em;
+  text-align: justify;
+  text-indent: 0;
+  margin: 0;
+}

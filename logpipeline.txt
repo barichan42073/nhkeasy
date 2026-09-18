@@ -1,0 +1,96 @@
+v) smartreader $ python3 pipeline.py --no-anki-import --days-back 2 --max-articles 1
+2026-08-11 12:00:35,215 - INFO - Starting pipeline to process NHK Easy articles.
+2026-08-11 12:00:35,215 - INFO - Fetching latest RSS feed to update articles.json...
+Successfully updated 50 articles to /home/nev/.local/share/rss_fetcher/articles.json
+2026-08-11 12:00:35,793 - INFO - Finished fetching RSS feed.
+2026-08-11 12:00:35,794 - INFO - Considering articles published since 2026-08-09 16:00:35 UTC (sliding window).
+2026-08-11 12:00:35,795 - INFO - Eligible for processing: '関東地方に台風15号　大雨や強い風に気をつけて' (ID: https://nhkeasier.com/story/9861/) - published 2026-08-10T11:15:00+00:00.
+2026-08-11 12:00:35,795 - INFO - Eligible for processing: '熊本では暑い日が続く　熱中症と強い地震に気をつけて' (ID: https://nhkeasier.com/story/9862/) - published 2026-08-10T11:14:00+00:00.
+2026-08-11 12:00:35,795 - INFO - Eligible for processing: '北海道滝上町　木を切るスピードを競争した' (ID: https://nhkeasier.com/story/9863/) - published 2026-08-10T11:13:00+00:00.
+2026-08-11 12:00:35,795 - INFO - Eligible for processing: '福島県　赤ちゃんが元気に育つことを祈る「泣き相撲」' (ID: https://nhkeasier.com/story/9864/) - published 2026-08-10T11:12:00+00:00.
+2026-08-11 12:00:35,796 - INFO - Found 4 new articles eligible for processing.
+2026-08-11 12:00:35,796 - INFO - Processing up to 1 of 4 eligible articles.
+2026-08-11 12:00:35,796 - INFO - Fetching raw HTML for '関東地方に台風15号　大雨や強い風に気をつけて' from https://nhkeasier.com/story/9861/...
+2026-08-11 12:00:35,796 - INFO - Fetching lightweight HTML from https://nhkeasier.com/story/9861/ via httpx...
+2026-08-11 12:00:36,173 - INFO - HTTP Request: GET https://nhkeasier.com/story/9861/ "HTTP/1.1 200 OK"
+2026-08-11 12:00:36,363 - INFO - Staged HTML for '関東地方に台風15号　大雨や強い風に気をつけて' to 関東地方に台風15号_大雨や強い風に気をつけて_https___nhkeasier.com_story_9861_.html
+2026-08-11 12:00:36,363 - INFO - Converting staged content for '{article_title}' to EPUB: 関東地方に台風15号_大雨や強い風に気をつけて_https___nhkeasier.com_story_9861.epub
+2026-08-11 12:00:36,365 - INFO - Using provided HTML content for processing.
+2026-08-11 12:00:36,385 - INFO - Extracted title: '関東地方に台風15号大雨や強い風に気をつけて'
+2026-08-11 12:00:36,386 - INFO - Generating Markdown for '関東地方に台風15号大雨や強い風に気をつけて' using model 'deepseek-chat'...
+2026-08-11 12:00:36,386 - INFO - Calling DeepSeek API with model 'deepseek-chat' to process article and generate Markdown...
+2026-08-11 12:00:37,046 - INFO - HTTP Request: POST https://api.deepseek.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-08-11 12:05:15,663 - INFO - API Token Usage: 1820 total (1083 prompt, 737 completion).
+2026-08-11 12:05:15,664 - INFO - Converting Markdown to EPUB for '関東地方に台風15号　大雨や強い風に気をつけて'...
+2026-08-11 12:05:15,664 - INFO - Converting '関東地方に台風15号_大雨や強い風に気をつけて_https___nhkeasier.com_story_9861.md' -> '関東地方に台風15号_大雨や強い風に気をつけて_https___nhkeasier.com_story_9861.epub' with Calibre...
+Conversion options changed from defaults:
+  title: '関東地方に台風15号\u3000大雨や強い風に気をつけて'
+  authors: 'NHK Easy • 2026-08-11 12:05'
+  page_breaks_before: '//h:h1 | //h:h2'
+  extra_css: 'table { border-collapse: collapse; width: 100%; margin-top: 1em; page-break-before: always !important; font-size: 0.85em; } th, td { border: 1px solid #888888; padding: 3px 5px; text-align: left; } tr { page-break-inside: avoid !important; break-inside: avoid !important; } p, blockquote { page-break-inside: avoid !important; break-inside: avoid !important; } p + blockquote { page-break-before: avoid !important; break-before: avoid !important; margin-top: 1em; } blockquote { margin-left: 0 !important; margin-right: 0 !important; }'
+  language: 'ja'
+  no_default_epub_cover: True
+1% Converting input to HTML...
+InputFormatPlugin: TXT Input running
+on /home/nev/.local/share/rss_fetcher/epubs/関東地方に台風15号_大雨や強い風に気をつけて_https___nhkeasier.com_story_9861.md
+File extension indicates particular formatting. Forcing formatting type to: markdown
+Building file list...
+Normalizing filename cases
+Rewriting HTML links
+Forcing index.html into XHTML namespace
+34% Running transforms on e-book...
+Merging user specified metadata...
+Detecting structure...
+Auto generated TOC with 0 entries.
+Flattening CSS and remapping font sizes...
+Source base font size is 12.00000pt
+Removing fake margins...
+Cleaning up manifest...
+Trimming unused files from manifest...
+Creating EPUB Output...
+67% Running EPUB Output plugin
+Splitting markup on page breaks and flow limits, if any...
+	Looking for large trees in index.html...
+	No large trees found
+	Split into 2 parts
+This EPUB file has no Table of Contents. Creating a default TOC
+EPUB output written to /home/nev/.local/share/rss_fetcher/epubs/関東地方に台風15号_大雨や強い風に気をつけて_https___nhkeasier.com_story_9861.epub
+Output saved to   /home/nev/.local/share/rss_fetcher/epubs/関東地方に台風15号_大雨や強い風に気をつけて_https___nhkeasier.com_story_9861.epub
+2026-08-11 12:05:16,444 - INFO - Calibre conversion successful: /home/nev/.local/share/rss_fetcher/epubs/関東地方に台風15号_大雨や強い風に気をつけて_https___nhkeasier.com_story_9861.epub
+2026-08-11 12:05:16,444 - INFO - Successfully converted '関東地方に台風15号　大雨や強い風に気をつけて' to EPUB: /home/nev/.local/share/rss_fetcher/epubs/関東地方に台風15号_大雨や強い風に気をつけて_https___nhkeasier.com_story_9861.epub
+2026-08-11 12:05:16,444 - INFO - Attempting to send '関東地方に台風15号_大雨や強い風に気をつけて_https___nhkeasier.com_story_9861.epub' to Kindle email: faydwyer_a9a56f@kindle.com using mutt.
+2026-08-11 12:05:19,337 - INFO - Successfully sent '関東地方に台風15号_大雨や強い風に気をつけて_https___nhkeasier.com_story_9861.epub' to Kindle.
+2026-08-11 12:05:19,337 - INFO - '関東地方に台風15号　大雨や強い風に気をつけて' successfully sent to Kindle and marked as processed.
+2026-08-11 12:05:19,337 - INFO - Extracting vocabulary for '関東地方に台風15号　大雨や強い風に気をつけて'...
+2026-08-11 12:05:19,338 - INFO - Saved vocabulary list for '{article_title}' to 関東地方に台風15号_大雨や強い風に気をつけて_https___nhkeasier.com_story_9861.json.
+2026-08-11 12:05:19,399 - INFO - Anki package 'NHKeasynews::NHK Easy Vocab - 関東地方に台風15号_大雨や強い風に気をつけて' created successfully at /home/nev/.local/share/rss_fetcher/epubs/NHK_Easy_Vocab_-_関東地方に台風15号_大雨や強い風に気をつけて.apkg with 3 notes.
+Downloaded: https://nhkeasier.com/media/mp3/20260810de43085.mp3
+1. Transcribing '/home/nev/.local/share/rss_fetcher/audio/関東地方に台風15号_大雨や強い風に気をつけて_https___nhkeasier.com_story_9861.mp3' via Groq Whisper...
+2026-08-11 12:05:25,490 - INFO - HTTP Request: POST https://api.groq.com/openai/v1/audio/transcriptions "HTTP/1.1 200 OK"
+2. Detected 10 distinct sentences using PySBD.
+   [1] 台風15号が日本に向かって東から進んできています。
+   [2] 明日の夜には関東地方に来そうです。
+   [3] 関東地方や山梨県、長野県、東北地方、新潟県、北陸地方、東海地方では、明日から雨がたくさん降りそうです。
+   [4] 特に関東地方ではとても強く降るところがあるかもしれません
+   [5] 風がとても強く吹いて海では波が高くなりそうです
+   [6] 山が崩れたり低いところに水が入ったりするかもしれません
+   [7] 川の水が増えてあふれるところがあるかもしれません
+   [8] 気象庁は休みを使っていつもとは違うところに行く人が多いと思います
+   [9] 電車や飛行機などの交通に影響が出るかもしれません
+   [10] 情報をよく見てくださいと言っています
+3. Processing sentence repetitions and 1.0x/0.8x/0.7x time-stretching...
+Done! Saved repeated audio to '/home/nev/.local/share/rss_fetcher/slow_audio/関東地方に台風15号_大雨や強い風に気をつけて_https___nhkeasier.com_story_9861_slow.mp3'.
+2026-08-11 12:05:46,180 - INFO - Created slowed MP3: 関東地方に台風15号_大雨や強い風に気をつけて_https___nhkeasier.com_story_9861_slow.mp3
+2026-08-11 12:05:46,180 - INFO - Generating combined Anki package for 3 unique vocabulary words...
+2026-08-11 12:05:46,223 - INFO - Anki package 'NHKeasynews::nhkeasy_20260811' created successfully at /home/nev/.local/share/rss_fetcher/epubs/nhkeasy_20260811.apkg with 3 notes.
+2026-08-11 12:05:46,223 - INFO - Updated processed history: 1 entries.
+2026-08-11 12:05:46,224 - INFO - Pipeline finished. Processed 1 new articles.
+2026-08-11 12:05:46,224 - INFO - Combining 1 slowed MP3 files into /home/nev/.local/share/rss_fetcher/combined_slowed.mp3...
+2026-08-11 12:05:49,340 - INFO - Created combined MP3: /home/nev/.local/share/rss_fetcher/combined_slowed.mp3
+2026-08-11 12:05:49,341 - INFO - Removed per-article slowed MP3 files.
+2026-08-11 12:05:49,341 - INFO - Attempting to send 'combined_slowed.mp3' to Kindle email: barichan42073@gmail.com using mutt.
+2026-08-11 12:05:58,962 - INFO - Successfully sent 'combined_slowed.mp3' to Kindle.
+2026-08-11 12:05:58,962 - INFO - Sent combined MP3 to barichan42073@gmail.com
+2026-08-11 12:05:58,962 - INFO - Total pipeline run time: 323.75s
+
+

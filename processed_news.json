@@ -1,0 +1,205 @@
+[
+    {
+        "id": "s1",
+        "japanese": "ルールでは、国の安全と政治の独立を、ほかの国が軍の力で攻撃してはいけないとなっています。",
+        "english": "Under international rules, countries must not attack the security and political independence of others via military force.",
+        "tokens": [
+            {
+                "kanji": "ルール",
+                "reading": "るーる",
+                "dict": "ルール",
+                "dict_reading": "るーる",
+                "meaning": "Rule"
+            },
+            {
+                "kanji": "国",
+                "reading": "くに",
+                "dict": "国",
+                "dict_reading": "くに",
+                "meaning": "Country"
+            },
+            {
+                "kanji": "安全",
+                "reading": "あんぜん",
+                "dict": "安全",
+                "dict_reading": "あんぜん",
+                "meaning": "Safety"
+            },
+            {
+                "kanji": "政治",
+                "reading": "せいじ",
+                "dict": "政治",
+                "dict_reading": "せいじ",
+                "meaning": "Politics"
+            },
+            {
+                "kanji": "独立",
+                "reading": "どくりつ",
+                "dict": "独立",
+                "dict_reading": "どくりつ",
+                "meaning": "Independence"
+            },
+            {
+                "kanji": "軍",
+                "reading": "ぐん",
+                "dict": "軍",
+                "dict_reading": "ぐん",
+                "meaning": "Military"
+            },
+            {
+                "kanji": "力",
+                "reading": "ちから",
+                "dict": "力",
+                "dict_reading": "ちから",
+                "meaning": "Force/Power"
+            },
+            {
+                "kanji": "攻撃",
+                "reading": "こうげき",
+                "dict": "攻撃",
+                "dict_reading": "こうげき",
+                "meaning": "Attack"
+            }
+        ]
+    },
+    {
+        "id": "s2",
+        "japanese": "調査チームは、アメリカとイスラエルはルールに違反していると強く言いました。",
+        "english": "The investigation team stated that the US and Israel are violating these rules.",
+        "tokens": [
+            {
+                "kanji": "調査",
+                "reading": "ちょうさ",
+                "dict": "調査",
+                "dict_reading": "ちょうさ",
+                "meaning": "Investigation"
+            },
+            {
+                "kanji": "アメリカ",
+                "reading": "あめりか",
+                "dict": "アメリカ",
+                "dict_reading": "あめりか",
+                "meaning": "USA"
+            },
+            {
+                "kanji": "イスラエル",
+                "reading": "いすらえる",
+                "dict": "イスラエル",
+                "dict_reading": "いすらえる",
+                "meaning": "Israel"
+            },
+            {
+                "kanji": "違反",
+                "reading": "いはん",
+                "dict": "違反",
+                "dict_reading": "いはん",
+                "meaning": "Violation"
+            },
+            {
+                "kanji": "強く",
+                "reading": "つよく",
+                "dict": "強い",
+                "dict_reading": "つよい",
+                "meaning": "Strongly"
+            }
+        ]
+    },
+    {
+        "id": "s3",
+        "japanese": "そして、イランの小学校でたくさんの子どもたちが攻撃で亡くなったというニュースに、ショックを受けていると発表しました。",
+        "english": "They announced shock at reports of many children dying in an attack on an Iranian school.",
+        "tokens": [
+            {
+                "kanji": "イラン",
+                "reading": "いらん",
+                "dict": "イラン",
+                "dict_reading": "いらん",
+                "meaning": "Iran"
+            },
+            {
+                "kanji": "小学校",
+                "reading": "しょうがっこう",
+                "dict": "小学校",
+                "dict_reading": "しょうがっこう",
+                "meaning": "Elementary school"
+            },
+            {
+                "kanji": "子ども",
+                "reading": "こども",
+                "dict": "子ども",
+                "dict_reading": "こども",
+                "meaning": "Children"
+            },
+            {
+                "kanji": "亡くなった",
+                "reading": "なく（なった）",
+                "dict": "亡くなる",
+                "dict_reading": "なくなる",
+                "meaning": "Died"
+            },
+            {
+                "kanji": "受けている",
+                "reading": "う（けている）",
+                "dict": "受ける",
+                "dict_reading": "うける",
+                "meaning": "Receiving/Feeling"
+            },
+            {
+                "kanji": "ショック",
+                "reading": "しょっく",
+                "dict": "ショック",
+                "dict_reading": "しょっく",
+                "meaning": "Shock"
+            },
+            {
+                "kanji": "発表",
+                "reading": "はっぴょう",
+                "dict": "発表",
+                "dict_reading": "はっぴょう",
+                "meaning": "Announcement"
+            }
+        ]
+    },
+    {
+        "id": "s4",
+        "japanese": "調査チームは「イランの攻撃で、周りの国で亡くなった人が出ています。アメリカとイスラエル、そしてイランは、すぐに攻撃をやめなさい」と言いました。",
+        "english": "The investigation team said, 'Because of Iran's attacks, people are dying in surrounding countries. The US, Israel, and Iran must stop the attacks immediately.'",
+        "tokens": [
+            {
+                "kanji": "調査",
+                "reading": "ちょうさ",
+                "dict": "調査",
+                "dict_reading": "ちょうさ",
+                "meaning": "Investigation"
+            },
+            {
+                "kanji": "周り",
+                "reading": "まわり",
+                "dict": "周り",
+                "dict_reading": "まわり",
+                "meaning": "Surrounding"
+            },
+            {
+                "kanji": "人",
+                "reading": "ひと",
+                "dict": "人",
+                "dict_reading": "ひと",
+                "meaning": "People"
+            },
+            {
+                "kanji": "出ています",
+                "reading": "で（ています）",
+                "dict": "出る",
+                "dict_reading": "でる",
+                "meaning": "Emerging"
+            },
+            {
+                "kanji": "やめなさい",
+                "reading": "やめなさい",
+                "dict": "やめる",
+                "dict_reading": "やめる",
+                "meaning": "Stop!"
+            }
+        ]
+    }
+]

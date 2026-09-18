@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ analysis.title_ja }}</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { font-family: sans-serif; margin: 0; padding: 0; background: #f9f9f9; }
+    .container { display: flex; gap: 30px; max-width: 1200px; margin: 0 auto; padding: 20px; }
+    main { flex: 2; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    aside { flex: 1; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 20px; max-height: 90vh; overflow-y: auto; }
+    
+    ruby rt { font-size: 0.65em; }
+    .hover-furigana ruby rt { opacity: 0; transition: opacity 0.15s ease-in-out; }
+    .hover-furigana ruby:hover rt { opacity: 1; }
+
+    /* Dictionary Mode Styles */
+    body.dictionary-active .article-content ruby.dict-word-target,
+    body.dictionary-active .article-content .dict-word-target {
+        cursor: help;
+        text-decoration: underline dotted #a0a0a0;
+    }
+    body.dictionary-active .article-content .dict-word-target.dict-highlight {
+        background-color: #e0f2f7;
+        border-radius: 3px;
+    }
+    
+    .vocab-item { margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+    .vocab-word { font-weight: bold; font-size: 1.1em; }
+    .vocab-reading { color: #666; font-size: 0.9em; }
+    .translation-panel { margin-top: 30px; padding-top: 20px; border-top: 2px solid #eee; }
+
+  </style>
+</head>
+<body>
+  <header id="article-header">
+    <div class="head">
+      <div class="logo"><span>NHK</span> EASY NEWS</div>
+    </div>
+  </header>
+  <div class="container">
+    <main class="hover-furigana">
+      <h1>{{ analysis.title_ja }}</h1>
+      <p>
+        <a href="index.html">Back to Articles Index</a>
+        {% if article_original_url %} | <a href="{{ article_original_url }}">Original Article</a>{% endif %}
+      </p>
+      <p><em>{{ analysis.title_en }}</em></p>
+      {% if image_url %}
+      <div class="article-image" style="margin-bottom: 20px;">
+          <img src="{{ image_url }}" alt="{{ analysis.title_ja }}" style="max-width: 100%; height: auto; border-radius: 6px;">
+      </div>
+      {% endif %}
+      {% if slow_audio_path %}
+      <div class="audio-player-container" style="margin-bottom: 20px;">
+          <audio controls preload="none">
+              <source src="{{ slow_audio_path }}" type="audio/mpeg">
+              Your browser does not support the audio element.
+          </audio>
+      </div>
+      {% endif %}
+      <hr>
+      <div class="article-content">
+        {{ article_body_html | safe }}
+      </div>
+      
+      <div class="translation-panel">
+        <h3>Sentence Translation</h3>
+        {% for item in paragraph_translation_display_data %}
+          <p>{{ item.japanese_html | safe }}<br><span style="color: #555;">{{ item.translation }}</span></p>
+        {% endfor %}
+      </div>
+
+      <div id="dictionary-tooltip" style="position: absolute; background: rgba(0,0,0,0.85); color: #fff; padding: 8px 12px; border-radius: 6px; display: none; z-index: 1000; font-size: 0.9em; max-width: 300px; line-height: 1.4;"></div>
+      <script type="application/json" id="vocab-data-json">{{ vocab_data_json | safe }}</script>
+
+    </main>
+
+    <aside>
+      <h3>Key Vocabulary</h3>
+      {% for v in analysis.side_vocab %}
+        <div class="vocab-item">
+          <span class="vocab-word">{{ v.word }}</span> 
+          <span class="vocab-reading">({{ v.reading }})</span>
+          <div>{{ v.definition }}</div>
+        </div>
+      {% endfor %}
+    </aside>
+  </div>
+
+  <script>
+    let dictionaryMode = false;
+    const dictionaryTooltip = document.getElementById('dictionary-tooltip');
+    const articleContent = document.querySelector('.article-content');
+    let currentHoveredWordElement = null;
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'd' || e.key === 'D') {
+            dictionaryMode = !dictionaryMode;
+            document.body.classList.toggle('dictionary-active', dictionaryMode);
+            if (!dictionaryMode) {
+                dictionaryTooltip.style.display = 'none';
+                if (currentHoveredWordElement) {
+                    currentHoveredWordElement.classList.remove('dict-highlight');
+                    currentHoveredWordElement = null;
+                }
+            }
+            console.log('Dictionary Mode:', dictionaryMode ? 'ON' : 'OFF');
+        }
+    });
+
+    articleContent.addEventListener('mouseover', (e) => {
+        if (!dictionaryMode) return;
+
+        let target = e.target;
+        while (target && target !== articleContent && !target.classList.contains('dict-word-target')) {
+            target = target.parentNode;
+        }
+
+        if (target && target.classList.contains('dict-word-target')) {
+            const definition = target.dataset.dictDefinition;
+            const word = target.dataset.dictWord;
+            const reading = target.dataset.dictReading;
+            const level = target.dataset.dictLevel;
+
+            if (definition) {
+                dictionaryTooltip.innerHTML = `<strong>${word}</strong> (${reading || '---'})<br>${definition}`;
+                if (level) {
+                    dictionaryTooltip.innerHTML += `<div style="font-size:0.8em; color:#bbb; margin-top:5px;">JLPT: ${level.toUpperCase()}</div>`;
+                }
+                dictionaryTooltip.style.left = (e.pageX + 10) + 'px';
+                dictionaryTooltip.style.top = (e.pageY + 10) + 'px';
+                dictionaryTooltip.style.display = 'block';
+
+                if (currentHoveredWordElement && currentHoveredWordElement !== target) {
+                    currentHoveredWordElement.classList.remove('dict-highlight');
+                }
+                target.classList.add('dict-highlight');
+                currentHoveredWordElement = target;
+            }
+        } else {
+            dictionaryTooltip.style.display = 'none';
+            if (currentHoveredWordElement) {
+                currentHoveredWordElement.classList.remove('dict-highlight');
+                currentHoveredWordElement = null;
+            }
+        }
+    });
+
+    articleContent.addEventListener('mouseleave', () => {
+        if (dictionaryMode) {
+            dictionaryTooltip.style.display = 'none';
+            if (currentHoveredWordElement) {
+                currentHoveredWordElement.classList.remove('dict-highlight');
+                currentHoveredWordElement = null;
+            }
+        }
+    });
+  </script>
+</body>
+</html>

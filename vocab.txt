@@ -1,0 +1,19 @@
+Text_Form,Dictionary_Form,Reading,Category
+国,国,くに,General-Noun
+安全,安全,あんぜん,General-Noun
+政治,政治,せいじ,General-Noun
+独立,独立,どくりつ,General-Noun
+軍,軍,ぐん,General-Noun
+力,力,ちから,General-Noun
+攻撃,攻撃,こうげき,General-Noun
+調査,調査,ちょうさ,General-Noun
+違反,違反,いはん,General-Noun
+言い,言う,いい,Verb (五段-ワア行)
+小学校,小学校,しょうがっこう,General-Noun
+子どもたち,子どもたち,こどもたち,General-Noun
+亡くなっ,亡くなる,なくなっ,Verb (五段-ラ行)
+受け,受ける,うけ,Verb (下一段-カ行)
+発表,発表,はっぴょう,General-Noun
+周り,周り,まわり,General-Noun
+人,人,ひと,General-Noun
+出,出る,で,Verb (下一段-ダ行)

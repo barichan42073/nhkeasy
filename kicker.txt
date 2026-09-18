@@ -1,0 +1,17 @@
+To make the script run cleanly again, based on the identified issues and the behavior described, please take the following steps:   
+
+ 1 Remove kicker references from templates/smartreader_index.html: The kicker attribute is not provided in the article data. Remove 
+   the lines that attempt to display it.                                                                                            
+    • Remove line 19: <span class="lead-kicker">{{ articles[0].kicker }}</span>                                                     
+    • Remove line 39: <span class="card-kicker">{{ article.kicker }}</span>                                                         
+ 2 Remove duplicated CSS from templates/styles.css: The "Smart Reader Index Page Styles" section is duplicated. Remove the second   
+   instance of this entire block.                                                                                                   
+    • Delete the CSS block from line 357 to the end of the file. This block starts with .container { max-width: 960px; and is a     
+      duplicate of the block starting on line 242.                                                                                  
+ 3 Ensure sudachipy is correctly installed and its dictionaries are intact: A silent crash, especially after an ebook-convert       
+   process, can sometimes indicate a deeper issue with a library's native components. Since web_builder.py uses sudachi.py,         
+   reinstalling the sudachipy library and its dictionaries can resolve potential environmental or corruption issues.                
+    • Run: pip uninstall sudachipy sudachidict_core                                                                                 
+    • Then run: pip install sudachipy sudachidict_core                                                                              
+
+These steps address the direct inconsistencies and a potential cause for the type of silent crash observed.   

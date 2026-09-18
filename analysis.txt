@@ -1,0 +1,208 @@
+We need to answer user's question: they asked about verbs and i-adjectives not working, whether they are in
+  built-in dictionary, options for enriching, and whether AI server should do enriching, and whether 
+ suchadiya and McCabe needed. So we need to provide analysis and suggestions. No code changes requested. 
+ Provide summary.
+
+ Short answer
+
+ * Yes – the verbs and i‑adjectives that appear in the article **are already present** in the JSON
+ vocabulary block (<script id="vocab-data-json">…</script>).
+ * The problem is that they are **not marked in the HTML** with the dict-word‑target class and the required
+ data‑dict‑* attributes, so the tooltip logic never sees them.
+ * To make those words behave like the nouns you have three practical ways to “enrich” them:
+
+ 1. Server‑side preprocessing (the most efficient for a static‑page workflow).
+ 2. Client‑side on‑the‑fly enrichment with a tiny JavaScript tokenizer (Kuromoji.js).
+ 3. Hybrid – keep the server‑side enrichment for most words and fall back to client‑side for any that were
+ missed.
+
+ * An AI server is optional. A simple morphological analyzer (Sudachi or MeCab) is enough to tag verbs and
+ i‑adjectives and to copy the data from the existing vocab JSON into the HTML. Use the AI only if you need
+ dynamic sense disambiguation or definitions for words that are not already in the static vocab list.
+ * You only need **one** morphological analyzer. Either **Sudachi** (the sudachi.py helper already in the
+ repo) or MeCab will do the job; “suchadiya” and “McCabe” are not required for this task.
+
+ Below is a concise roadmap that shows how to implement each option in the current code base, plus a short
+ note on why the AI server is usually overkill for this specific problem.
+
+ ---
+
+ 1. Why verbs/i‑adjectives don’t show a tooltip
+
+ * The tooltip code (both in demo.html and in the Jinja template web_builder.py) does exactly one thing:
+
+
+   while (target && target !== articleContent && !target.classList.contains('dict-word-target')) {
+       target = target.parentNode;
+   }
+   if (target && target.classList.contains('dict-word-target')) {
+       // show tooltip using target.dataset.*
+   }
+
+
+ * Only elements that already have the class dict-word-target and the data attributes (data-dict-word,
+ data-dict-reading, data-dict-definition, optionally data-dict-level) will ever enter that branch.
+
+ * In the current HTML all nouns are written as
+
+
+   <ruby class="dict-word-target"
+         data-dict-word="大雨"
+         data-dict-reading="おおあめ"
+         data-dict-definition="heavy rain"
+         data-dict-level="n3">大雨<rt>おおあめ</rt></ruby>
+
+
+ * Verbs and i‑adjectives appear only as plain <ruby> (or plain text) like
+
+
+   <ruby>あふれる<rt>あふれる</rt></ruby>
+
+
+ Hence the tooltip never fires for them even though entries for those words exist in the JSON block at the
+ bottom of the page.
+
+ ---
+
+ 2. Options for enriching the HTML
+
+ 2‑a. Server‑side enrichment (recommended)
+
+ Where it fits:
+ pipeline.py → web_builder.render_interactive_page() already builds the final HTML. You can enrich the
+ <ruby> tags right before rendering.
+
+ What to do:
+
+ 1. Parse the article with **Sudachi** (the repo already contains sudachi.py).
+ 2. For each token whose part‑of‑speech is **verb** (動詞) or **i‑adjective** (形容詞) look up the token’s
+ surface form in the already‑generated analysis.side_vocab (or directly in the JSON data).
+ 3. If a match is found, add the same attributes that nouns receive (class="dict-word-target" + the
+ data‑dict‑* attributes).
+
+ Result: the generated HTML will already contain the required markup for every word that the dictionary
+ knows, and the existing tooltip code works unchanged.
+
+ Benefit: No extra JavaScript payload, the work is done once on the server, and the page loads instantly on
+ any device.
+
+ ---
+
+ 2‑b. Client‑side enrichment (fallback only)
+
+ When to use:
+ * If you cannot modify the server pipeline (e.g., the HTML is produced by a third‑party service).
+ * If you want a “plug‑and‑play” solution that works on any page without rebuilding it.
+
+ How:
+
+ 1. Load a tiny Japanese tokenizer in the browser – Kuromoji.js (≈ 200 KB gzipped) is the most common
+ choice.
+ 2. When the user toggles dictionary mode (d/D) and the mouse moves over an element that **does not**
+ already have dict-word-target, run the tokenizer on the element’s inner text.
+ 3. If the token’s POS is verb or adjective **and** the word exists in the vocab-data-json map, dynamically
+ add the class and the data attributes to that element, then show the tooltip exactly as the existing code
+ does.
+
+ Benefit: Works without any server changes and automatically covers any new words that appear in the JSON.
+ Cost: Slightly larger initial download and a tiny amount of CPU for tokenisation, but it only runs when
+ dictionary mode is active.
+
+ ---
+
+ 2‑c. Hybrid approach (recommended for robustness)
+
+ *Run the server‑side enrichment for the bulk of the article (the vast majority of words will already be
+ annotated).
+ *Add the client‑side Kuromoji fallback to catch any word that somehow missed the server step (e.g., a word
+ that appears after a later edit, or a word not in the original vocab list).
+
+ Implementation is straightforward: keep the server‑side code from 2‑a, and add the Kuromoji snippet from
+ 2‑b only inside the articleContent.addEventListener('mouseover', …) handler, right before the existing
+ while (target …) loop.
+
+ ---
+
+ 3. Should an **AI server** do the enrichment?
+
+ *The AI server (Gemini call you already have in pipeline.py) is **excellent for producing the structured
+ ArticleAnalysis object (title, sentence translations, side‑vocab). It is not needed* for the simple step of
+  attaching that data to the HTML.
+
+ * Use the AI **once**, when you generate ArticleAnalysis.
+ * Then use a rule‑based morphological analyzer (Sudachi/MeCab) to copy that data into the HTML.
+
+ Only consider an AI‑driven enrichment if you need dynamic sense disambiguation (e.g., the same kanji string
+  can be a noun or a verb depending on context) or you want to generate definitions on the fly for words 
+ that are not in your static vocab list. That would be a more advanced feature and adds latency and cost.
+
+ ---
+
+ 4. “Suchadiya” and “McCabe”
+
+ * **Sudachi** – the repository already contains sudachi.py; this is the tool you should use for server‑side
+  tokenisation.
+ * McCabe – in the programming world “McCabe” usually refers to *cyclomatic complexity* analysis, which is
+ unrelated to Japanese language processing. It is not needed for this task.
+
+ So you only need Sudachi (or MeCab); no other named libraries are required.
+
+ ---
+
+ 5. Concrete next steps you can take right now
+
+ 1. **Confirm the vocab JSON contains the missing verbs/i‑adjectives** (you already saw entries for
+ あふれる, 亡くなる, 入る, 助ける).
+ 2. **Add a quick server‑side enrichment function** in web_builder.py (or a helper module) that:
+
+    ```python
+    from sudachipy import dictionary, tokenizer
+
+    def annotate_ruby_tags(soup, vocab_map):
+        tokeniser = dictionary.Dictionary().create()
+        for ruby in soup.find_all("ruby"):
+            # get the plain word inside the ruby (ignore <rt>)
+            word = "".join(c for c in ruby.strings if not isinstance(c, Tag)).strip()
+            if not word:
+                continue
+            # check POS via Sudachi
+            token = tokeniser.tokenize(word, tokenizer.Tokenizer.SplitMode.C)[0]
+            if token.part_of_speech()[0] in ("動詞", "形容詞"):
+                if word in vocab_map:
+                    v = vocab_map[word]
+                    ruby["class"] = ruby.get("class", []) + ["dict-word-target"]
+                    ruby["data-dict-word"] = v.word
+                    ruby["data-dict-reading"] = v.reading
+                    ruby["data-dict-definition"] = v.definition
+                    if v.jlpt_level:
+                        ruby["data-dict-level"] = v.jlpt_level
+    ```
+
+    Call this right after you build article_body and before you render the Jinja template.
+
+ 3. **Re‑run the pipeline** (python pipeline.py …) and open the generated HTML. Press d/D and hover a verb
+ such as あふれる – you should now see the tooltip and the dotted underline, just like for nouns.
+
+ 4. (Optional) **Add a Kuromoji fallback** – copy the snippet from the “client‑side enrichment” section into
+  web_builder.py’s script block, after the existing articleContent.addEventListener('mouseover', …) code, to
+  handle any edge cases.
+
+ ---
+
+ TL;DR
+
+ Verbs and i‑adjectives are already in the built‑in dictionary; they just lack the HTML markup that the 
+ tooltip script expects.
+ **Enrich the HTML** either on the server with Sudachi/MeCab (preferred) or on the client with Kuromoji.js
+ (fallback). An AI server is unnecessary for this specific enrichment, and you only need Sudachi (or MeCab)
+ – “suchadiya” and “McCabe” are not required. Once the markup is added, the d/D toggle will work for all
+ word types.
+
+ > there 
+
+ The user sent a garbled message: "there ". Likely they want something else? Could be they typed 
+ incorrectly. Maybe they want continuation? We need to ask for clarification.
+
+ It looks like your last message got garbled. Could you let me know what you’d like to do next or clarify
+ your request? I'm happy to help!
+

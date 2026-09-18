@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title | e }}</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="script.js"></script>
+</head>
+<body>
+    <div class="controls">
+        <button onclick="setMode('none', this)">なし</button>
+        <button class="active" onclick="setMode('all', this)">あり</button>
+        <button onclick="setMode('hard', this)">むずかしい</button>
+        <button id="showBtn">Show Furigana</button>
+        <button id="hideBtn">Hide Furigana</button>
+    </div>
+
+    <div id="main-content">
+        <div class="article-inner mode-all" id="article-body">
+            {% for sentence in sentences %}
+                {% if sentence.is_title %}
+                    <h1 class="article-title"
+                        data-sentence-id="{{ sentence.sentence_id }}"
+                        data-jp="{{ sentence.jp | e }}"
+                        data-en="{{ sentence.en | e }}"
+                        onclick="showSentenceTranslation(this)">
+                        {% for token in sentence.tokens %}
+                            {% if token.has_kanji %}
+                                {% if token.is_selectable %}
+                                    <ruby class="word-token {{ token.level | e }}"
+                                          data-surface="{{ token.surface | e }}"
+                                          data-reading="{{ token.reading | e }}"
+                                          data-base="{{ token.base | e }}"
+                                          data-basereading="{{ token.base_reading | e }}"
+                                          data-level="{{ token.level | e }}"
+                                          data-trans="{{ token.translation | e }}"
+                                          onclick="showSidebar(this); event.stopPropagation();">
+                                        {{ token.surface }}
+                                        <rt>{{ token.reading }}</rt>
+                                    </ruby>
+                                {% else %}
+                                    <ruby>
+                                        {{ token.surface }}
+                                        <rt>{{ token.reading }}</rt>
+                                    </ruby>
+                                {% endif %}
+                            {% else %}
+                                {% if token.is_selectable %}
+                                    <span class="word-token {{ token.level | e }}"
+                                          data-surface="{{ token.surface | e }}"
+                                          data-reading="{{ token.reading | e }}"
+                                          data-base="{{ token.base | e }}"
+                                          data-basereading="{{ token.base_reading | e }}"
+                                          data-level="{{ token.level | e }}"
+                                          data-trans="{{ token.translation | e }}"
+                                          onclick="showSidebar(this); event.stopPropagation();">{{ token.surface }}</span>
+                                {% else %}
+                                    <span>{{ token.surface }}</span>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    </h1>
+                {% else %}
+                    <p class="article-body-text"
+                       data-sentence-id="{{ sentence.sentence_id }}"
+                       data-jp="{{ sentence.jp | e }}"
+                       data-en="{{ sentence.en | e }}"
+                       onclick="showSentenceTranslation(this)">
+                        {% for token in sentence.tokens %}
+                           {% if token.has_kanji %}
+                               {% if token.is_selectable %}
+                                   <ruby class="word-token {{ token.level | e }}"
+                                         data-surface="{{ token.surface | e }}"
+                                         data-reading="{{ token.reading | e }}"
+                                         data-base="{{ token.base | e }}"
+                                         data-basereading="{{ token.base_reading | e }}"
+                                         data-level="{{ token.level | e }}"
+                                         data-trans="{{ token.translation | e }}"
+                                         onclick="showSidebar(this); event.stopPropagation();">
+                                       {{ token.surface }}
+                                       <rt>{{ token.reading }}</rt>
+                                   </ruby>
+                               {% else %}
+                                   <ruby>
+                                       {{ token.surface }}
+                                       <rt>{{ token.reading }}</rt>
+                                   </ruby>
+                               {% endif %}
+                           {% else %}
+                               {% if token.is_selectable %}
+                                   <span class="word-token {{ token.level | e }}"
+                                         data-surface="{{ token.surface | e }}"
+                                         data-reading="{{ token.reading | e }}"
+                                         data-base="{{ token.base | e }}"
+                                         data-basereading="{{ token.base_reading | e }}"
+                                         data-level="{{ token.level | e }}"
+                                         data-trans="{{ token.translation | e }}"
+                                         onclick="showSidebar(this); event.stopPropagation();">{{ token.surface }}</span>
+                               {% else %}
+                                   <span>{{ token.surface }}</span>
+                               {% endif %}
+                           {% endif %} 
+                            
+                        {% endfor %}
+                    </p>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <div id="sentence-content" class="sidebar-card" style="margin-bottom: 20px;">
+            <p style="color:#94a3b8; text-align:center;">Click a sentence to see its translation...</p>
+        </div>
+
+        <div id="side-content" class="sidebar-card" style="margin-bottom: 20px;">
+            <p style="color:#94a3b8; text-align:center;">Select a word to see details...</p>
+        </div>
+
+        <div id="vocab-content" class="sidebar-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px;">
+                <strong>Vocab List</strong>
+                <button type="button" onclick="addCurrentWordToVocab()">Add current word</button>
+            </div>
+            <div id="vocab-list">
+                <p style="color:#94a3b8; text-align:center;">No saved words yet.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('showBtn').addEventListener('click', function() {
+            document.body.classList.add('show-furigana');
+        });
+
+        document.getElementById('hideBtn').addEventListener('click', function() {
+            document.body.classList.remove('show-furigana');
+        });
+    </script>
+</body>
+</html>

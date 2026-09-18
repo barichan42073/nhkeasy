@@ -1,0 +1,30 @@
+To effectively test the formatting of templates/smartreader_index.html without running the entire pipeline or modifying existing    
+pipeline.py code, you can create a dedicated test script that directly utilizes the jinja_render.py module. This approach allows you
+to isolate the template rendering logic.                                                                                            
+
+Here's a suggested test setup:                                                                                                      
+
+ 1 Create a new Python test file (e.g., test_index_html_rendering.py).                                                              
+ 2 Import the rendering function: From jinja_render.py, import render_html_from_json_data.                                          
+ 3 Prepare mock data: Create a dictionary that exactly mirrors the template_data structure that _generate_index_html in pipeline.py 
+   passes to render_html_from_json_data. This mock data should include:                                                             
+    • articles: A list of dictionaries, each representing an article with fields like relative_path, image_url, kicker, title, id,  
+    • articles: A list of dictionaries, each representing an article with fields like relative_path, image_url, kicker, title, id,  
+      date.                                                                                                                         
+    • current_date_japanese: A string for the full Japanese date.                                                                   
+    • current_date_iso: A string for the ISO formatted date.                                                                        
+ 4 Call the rendering function directly: Invoke render_html_from_json_data with your mock data, the path to your templates          
+   directory, and 'smartreader_index.html' as the template filename.                                                                
+ 5 Inspect the output:                                                                                                              
+    • Assertions: Check that specific elements or text snippets you expect to be in the HTML are present (e.g., <title>NHK Easy News
+      — ...</title>, <h1>...</h1>, <div class="kicker">...</div>). You can use string assertions or parse the generated HTML with a 
+      library like BeautifulSoup for more robust checks.                                                                            
+    • Snapshot Testing: As you suggested, a "production snapshot" (or "golden file" testing) can be very effective here. Generate   
+      the HTML once with known good data and save it as a reference file (e.g., expected_index.html). In subsequent test runs,      
+      generate the HTML again with the same mock data and compare it byte-for-byte or semantically against the reference file. This 
+      immediately highlights any unintended changes in the HTML output.                                                             
+
+This test will directly validate if templates/smartreader_index.html correctly renders with the expected data structure, catching   
+issues related to missing attributes (like kicker) or incorrect filter usage (split) before you integrate it into the full pipeline.
+
+Example test_index_html_rendering.py skeleton:                 

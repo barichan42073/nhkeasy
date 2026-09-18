@@ -1,0 +1,501 @@
+Row,Kanji,Category (Japanese),Category (English),Page
+1,日,絵からできた漢字,Kanji derived from pictures,Page 1
+2,月,絵からできた漢字,Kanji derived from pictures,Page 1
+3,火,絵からできた漢字,Kanji derived from pictures,Page 1
+4,水,絵からできた漢字,Kanji derived from pictures,Page 1
+5,木,絵からできた漢字,Kanji derived from pictures,Page 1
+6,金,絵からできた漢字,Kanji derived from pictures,Page 1
+7,土,絵からできた漢字,Kanji derived from pictures,Page 1
+8,山,絵からできた漢字,Kanji derived from pictures,Page 1
+9,川,絵からできた漢字,Kanji derived from pictures,Page 1
+10,田,絵からできた漢字,Kanji derived from pictures,Page 1
+11,人,絵からできた漢字,Kanji derived from pictures,Page 1
+12,女,絵からできた漢字,Kanji derived from pictures,Page 1
+13,子,絵からできた漢字,Kanji derived from pictures,Page 1
+14,目,絵からできた漢字,Kanji derived from pictures,Page 1
+15,口,絵からできた漢字,Kanji derived from pictures,Page 1
+16,耳,絵からできた漢字,Kanji derived from pictures,Page 1
+17,手,絵からできた漢字,Kanji derived from pictures,Page 1
+18,足,絵からできた漢字,Kanji derived from pictures,Page 1
+19,車,絵からできた漢字,Kanji derived from pictures,Page 1
+20,門,絵からできた漢字,Kanji derived from pictures,Page 1
+21,雨,絵からできた漢字,Kanji derived from pictures,Page 1
+22,竹,絵からできた漢字,Kanji derived from pictures,Page 1
+23,米,絵からできた漢字,Kanji derived from pictures,Page 1
+24,石,絵からできた漢字,Kanji derived from pictures,Page 1
+25,糸,絵からできた漢字,Kanji derived from pictures,Page 1
+26,魚,絵からできた漢字,Kanji derived from pictures,Page 1
+27,鳥,絵からできた漢字,Kanji derived from pictures,Page 1
+28,牛,絵からできた漢字,Kanji derived from pictures,Page 1
+29,馬,絵からできた漢字,Kanji derived from pictures,Page 1
+30,貝,絵からできた漢字,Kanji derived from pictures,Page 1
+31,一,記号からできた漢字,Kanji derived from symbols,Page 1
+32,二,記号からできた漢字,Kanji derived from symbols,Page 1
+33,三,記号からできた漢字,Kanji derived from symbols,Page 1
+34,四,記号からできた漢字,Kanji derived from symbols,Page 1
+35,五,記号からできた漢字,Kanji derived from symbols,Page 1
+36,六,記号からできた漢字,Kanji derived from symbols,Page 1
+37,七,記号からできた漢字,Kanji derived from symbols,Page 1
+38,八,記号からできた漢字,Kanji derived from symbols,Page 1
+39,九,記号からできた漢字,Kanji derived from symbols,Page 1
+40,十,記号からできた漢字,Kanji derived from symbols,Page 1
+41,上,記号からできた漢字,Kanji derived from symbols,Page 1
+42,下,記号からできた漢字,Kanji derived from symbols,Page 1
+43,中,記号からできた漢字,Kanji derived from symbols,Page 1
+44,大,記号からできた漢字,Kanji derived from symbols,Page 1
+45,小,記号からできた漢字,Kanji derived from symbols,Page 1
+46,本,記号からできた漢字,Kanji derived from symbols,Page 1
+47,半,記号からできた漢字,Kanji derived from symbols,Page 1
+48,分,記号からできた漢字,Kanji derived from symbols,Page 1
+49,力,記号からできた漢字,Kanji derived from symbols,Page 1
+50,円,記号からできた漢字,Kanji derived from symbols,Page 1
+51,明,組合せでできた漢字,Kanji derived from combinations,Page 1
+52,休,組合せでできた漢字,Kanji derived from combinations,Page 1
+53,体,組合せでできた漢字,Kanji derived from combinations,Page 1
+54,好,組合せでできた漢字,Kanji derived from combinations,Page 1
+55,男,組合せでできた漢字,Kanji derived from combinations,Page 1
+56,林,組合せでできた漢字,Kanji derived from combinations,Page 1
+57,森,組合せでできた漢字,Kanji derived from combinations,Page 1
+58,間,組合せでできた漢字,Kanji derived from combinations,Page 1
+59,聞,組合せでできた漢字,Kanji derived from combinations,Page 1
+60,畑,組合せでできた漢字,Kanji derived from combinations,Page 1
+61,岩,組合せでできた漢字,Kanji derived from combinations,Page 1
+62,(大),-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+63,(小),-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+64,(明),-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+65,新,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+66,古,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+67,長,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+68,短,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+69,高,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+70,安,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+71,低,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+72,暗,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+73,多,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+74,少,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+75,広,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+76,狭,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+77,近,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+78,遠,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+79,速,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+80,遅,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+81,早,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+82,白,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+83,黒,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+84,赤,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+85,青,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+86,暑,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+87,熱,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+88,寒,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+89,冷,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+90,暖,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+91,温,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+92,涼,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+93,良,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+94,悪,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+95,正,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+96,難,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+97,強,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+98,弱,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+99,若,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+100,忙,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+101,深,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+102,細,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+103,太,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+104,重,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+105,軽,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+106,眠,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+107,苦,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+108,痛,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+109,楽,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+110,悲,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+111,美,-い形容詞になる漢字,Kanji that become -i adjectives,Page 1
+112,元,-な形容詞になる漢字,Kanji that become -na adjectives,Page 1
+113,気,-な形容詞になる漢字,Kanji that become -na adjectives,Page 1
+114,有,-な形容詞になる漢字,Kanji that become -na adjectives,Page 1
+115,名,-な形容詞になる漢字,Kanji that become -na adjectives,Page 1
+116,親,-な形容詞になる漢字,Kanji that become -na adjectives,Page 1
+117,切,-な形容詞になる漢字,Kanji that become -na adjectives,Page 1
+118,便,-な形容詞になる漢字,Kanji that become -na adjectives,Page 1
+119,利,-な形容詞になる漢字,Kanji that become -na adjectives,Page 1
+120,不,-な形容詞になる漢字,Kanji that become -na adjectives,Page 1
+121,静,-な形容詞になる漢字,Kanji that become -na adjectives,Page 1
+122,適,-な形容詞になる漢字,Kanji that become -na adjectives,Page 1
+123,当,-な形容詞になる漢字,Kanji that become -na adjectives,Page 1
+124,残,-な形容詞になる漢字,Kanji that become -na adjectives,Page 1
+125,念,-な形容詞になる漢字,Kanji that become -na adjectives,Page 1
+126,自,-な形容詞になる漢字,Kanji that become -na adjectives,Page 1
+127,由,-な形容詞になる漢字,Kanji that become -na adjectives,Page 1
+128,簡,-な形容詞になる漢字,Kanji that become -na adjectives,Page 1
+129,単,-な形容詞になる漢字,Kanji that become -na adjectives,Page 1
+130,必,-な形容詞になる漢字,Kanji that become -na adjectives,Page 1
+131,要,-な形容詞になる漢字,Kanji that become -na adjectives,Page 1
+132,得,-な形容詞になる漢字,Kanji that become -na adjectives,Page 1
+133,意,-な形容詞になる漢字,Kanji that become -na adjectives,Page 1
+134,無,-な形容詞になる漢字,Kanji that become -na adjectives,Page 1
+135,理,-な形容詞になる漢字,Kanji that become -na adjectives,Page 1
+136,(好),-な形容詞になる漢字,Kanji that become -na adjectives,Page 1
+137,行,動詞になる漢字,Kanji that become verbs,Page 2
+138,来,動詞になる漢字,Kanji that become verbs,Page 2
+139,帰,動詞になる漢字,Kanji that become verbs,Page 2
+140,食,動詞になる漢字,Kanji that become verbs,Page 2
+141,飲,動詞になる漢字,Kanji that become verbs,Page 2
+142,見,動詞になる漢字,Kanji that become verbs,Page 2
+143,聞,動詞になる漢字,Kanji that become verbs,Page 2
+144,読,動詞になる漢字,Kanji that become verbs,Page 2
+145,書,動詞になる漢字,Kanji that become verbs,Page 2
+146,話,動詞になる漢字,Kanji that become verbs,Page 2
+147,買,動詞になる漢字,Kanji that become verbs,Page 2
+148,教,動詞になる漢字,Kanji that become verbs,Page 2
+149,作,動詞になる漢字,Kanji that become verbs,Page 2
+150,泳,動詞になる漢字,Kanji that become verbs,Page 2
+151,待,動詞になる漢字,Kanji that become verbs,Page 2
+152,言,動詞になる漢字,Kanji that become verbs,Page 2
+153,会,動詞になる漢字,Kanji that become verbs,Page 2
+154,売,動詞になる漢字,Kanji that become verbs,Page 2
+155,疲,動詞になる漢字,Kanji that become verbs,Page 2
+156,困,動詞になる漢字,Kanji that become verbs,Page 2
+157,開,動詞になる漢字,Kanji that become verbs,Page 2
+158,閉,動詞になる漢字,Kanji that become verbs,Page 2
+159,晴,動詞になる漢字,Kanji that become verbs,Page 2
+160,持,動詞になる漢字,Kanji that become verbs,Page 2
+161,歌,動詞になる漢字,Kanji that become verbs,Page 2
+162,出,動詞になる漢字,Kanji that become verbs,Page 2
+163,入,動詞になる漢字,Kanji that become verbs,Page 2
+164,乗,動詞になる漢字,Kanji that become verbs,Page 2
+165,降,動詞になる漢字,Kanji that become verbs,Page 2
+166,着,動詞になる漢字,Kanji that become verbs,Page 2
+167,渡,動詞になる漢字,Kanji that become verbs,Page 2
+168,通,動詞になる漢字,Kanji that become verbs,Page 2
+169,走,動詞になる漢字,Kanji that become verbs,Page 2
+170,歩,動詞になる漢字,Kanji that become verbs,Page 2
+171,止,動詞になる漢字,Kanji that become verbs,Page 2
+172,動,動詞になる漢字,Kanji that become verbs,Page 2
+173,働,動詞になる漢字,Kanji that become verbs,Page 2
+174,住,動詞になる漢字,Kanji that become verbs,Page 2
+175,習,動詞になる漢字,Kanji that become verbs,Page 2
+176,答,動詞になる漢字,Kanji that become verbs,Page 2
+177,起,動詞になる漢字,Kanji that become verbs,Page 2
+178,寝,動詞になる漢字,Kanji that become verbs,Page 2
+179,遊,動詞になる漢字,Kanji that become verbs,Page 2
+180,立,動詞になる漢字,Kanji that become verbs,Page 2
+181,座,動詞になる漢字,Kanji that become verbs,Page 2
+182,使,動詞になる漢字,Kanji that become verbs,Page 2
+183,始,動詞になる漢字,Kanji that become verbs,Page 2
+184,終,動詞になる漢字,Kanji that become verbs,Page 2
+185,貸,動詞になる漢字,Kanji that become verbs,Page 2
+186,借,動詞になる漢字,Kanji that become verbs,Page 2
+187,返,動詞になる漢字,Kanji that become verbs,Page 2
+188,送,動詞になる漢字,Kanji that become verbs,Page 2
+189,選,動詞になる漢字,Kanji that become verbs,Page 2
+190,違,動詞になる漢字,Kanji that become verbs,Page 2
+191,受,動詞になる漢字,Kanji that become verbs,Page 2
+192,落,動詞になる漢字,Kanji that become verbs,Page 2
+193,折,動詞になる漢字,Kanji that become verbs,Page 2
+194,払,動詞になる漢字,Kanji that become verbs,Page 2
+195,投,動詞になる漢字,Kanji that become verbs,Page 2
+196,打,動詞になる漢字,Kanji that become verbs,Page 2
+197,洗,動詞になる漢字,Kanji that become verbs,Page 2
+198,流,動詞になる漢字,Kanji that become verbs,Page 2
+199,消,動詞になる漢字,Kanji that become verbs,Page 2
+200,決,動詞になる漢字,Kanji that become verbs,Page 2
+201,泊,動詞になる漢字,Kanji that become verbs,Page 2
+202,急,動詞になる漢字,Kanji that become verbs,Page 2
+203,信,動詞になる漢字,Kanji that become verbs,Page 2
+204,押,動詞になる漢字,Kanji that become verbs,Page 2
+205,引,動詞になる漢字,Kanji that become verbs,Page 2
+206,割,動詞になる漢字,Kanji that become verbs,Page 2
+207,取,動詞になる漢字,Kanji that become verbs,Page 2
+208,求,動詞になる漢字,Kanji that become verbs,Page 2
+209,願,動詞になる漢字,Kanji that become verbs,Page 2
+210,知,動詞になる漢字,Kanji that become verbs,Page 2
+211,感,動詞になる漢字,Kanji that become verbs,Page 2
+212,泣,動詞になる漢字,Kanji that become verbs,Page 2
+213,笑,動詞になる漢字,Kanji that become verbs,Page 2
+214,覚,動詞になる漢字,Kanji that become verbs,Page 2
+215,忘,動詞になる漢字,Kanji that become verbs,Page 2
+216,考,動詞になる漢字,Kanji that become verbs,Page 2
+217,思,動詞になる漢字,Kanji that become verbs,Page 2
+218,伝,動詞になる漢字,Kanji that become verbs,Page 2
+219,代,動詞になる漢字,Kanji that become verbs,Page 2
+220,呼,動詞になる漢字,Kanji that become verbs,Page 2
+221,焼,動詞になる漢字,Kanji that become verbs,Page 2
+222,曲,動詞になる漢字,Kanji that become verbs,Page 2
+223,脱,動詞になる漢字,Kanji that become verbs,Page 2
+224,別,動詞になる漢字,Kanji that become verbs,Page 2
+225,集,動詞になる漢字,Kanji that become verbs,Page 2
+226,並,動詞になる漢字,Kanji that become verbs,Page 2
+227,喜,動詞になる漢字,Kanji that become verbs,Page 2
+228,驚,動詞になる漢字,Kanji that become verbs,Page 2
+229,飛,動詞になる漢字,Kanji that become verbs,Page 2
+230,建,動詞になる漢字,Kanji that become verbs,Page 2
+231,置,動詞になる漢字,Kanji that become verbs,Page 2
+232,向,動詞になる漢字,Kanji that become verbs,Page 2
+233,訪,動詞になる漢字,Kanji that become verbs,Page 2
+234,調,動詞になる漢字,Kanji that become verbs,Page 2
+235,増,動詞になる漢字,Kanji that become verbs,Page 2
+236,加,動詞になる漢字,Kanji that become verbs,Page 2
+237,減,動詞になる漢字,Kanji that become verbs,Page 2
+238,変,動詞になる漢字,Kanji that become verbs,Page 2
+239,移,動詞になる漢字,Kanji that become verbs,Page 2
+240,続,動詞になる漢字,Kanji that become verbs,Page 2
+241,過,動詞になる漢字,Kanji that become verbs,Page 2
+242,進,動詞になる漢字,Kanji that become verbs,Page 2
+243,比,動詞になる漢字,Kanji that become verbs,Page 2
+244,(上),動詞になる漢字,Kanji that become verbs,Page 2
+245,(下),動詞になる漢字,Kanji that become verbs,Page 2
+246,(分),動詞になる漢字,Kanji that become verbs,Page 2
+247,(休),動詞になる漢字,Kanji that become verbs,Page 2
+248,(聞),動詞になる漢字,Kanji that become verbs,Page 2
+249,(切),動詞になる漢字,Kanji that become verbs,Page 2
+250,私,名詞になる漢字,Kanji that become nouns,Page 2
+251,彼,名詞になる漢字,Kanji that become nouns,Page 2
+252,友,名詞になる漢字,Kanji that become nouns,Page 2
+253,客,名詞になる漢字,Kanji that become nouns,Page 2
+254,父,名詞になる漢字,Kanji that become nouns,Page 2
+255,母,名詞になる漢字,Kanji that become nouns,Page 2
+256,兄,名詞になる漢字,Kanji that become nouns,Page 2
+257,弟,名詞になる漢字,Kanji that become nouns,Page 2
+258,姉,名詞になる漢字,Kanji that become nouns,Page 2
+259,妹,名詞になる漢字,Kanji that become nouns,Page 2
+260,夫,名詞になる漢字,Kanji that become nouns,Page 2
+261,妻,名詞になる漢字,Kanji that become nouns,Page 2
+262,前,名詞になる漢字,Kanji that become nouns,Page 2
+263,後,名詞になる漢字,Kanji that become nouns,Page 2
+264,左,名詞になる漢字,Kanji that become nouns,Page 2
+265,右,名詞になる漢字,Kanji that become nouns,Page 2
+266,東,名詞になる漢字,Kanji that become nouns,Page 2
+267,西,名詞になる漢字,Kanji that become nouns,Page 2
+268,南,名詞になる漢字,Kanji that become nouns,Page 2
+269,北,名詞になる漢字,Kanji that become nouns,Page 2
+270,花,名詞になる漢字,Kanji that become nouns,Page 2
+271,茶,名詞になる漢字,Kanji that become nouns,Page 2
+272,肉,名詞になる漢字,Kanji that become nouns,Page 2
+273,文,名詞になる漢字,Kanji that become nouns,Page 2
+274,字,名詞になる漢字,Kanji that become nouns,Page 2
+275,物,名詞になる漢字,Kanji that become nouns,Page 2
+276,油,名詞になる漢字,Kanji that become nouns,Page 2
+277,海,名詞になる漢字,Kanji that become nouns,Page 2
+278,酒,名詞になる漢字,Kanji that become nouns,Page 2
+279,飯,名詞になる漢字,Kanji that become nouns,Page 2
+280,朝,名詞になる漢字,Kanji that become nouns,Page 2
+281,昼,名詞になる漢字,Kanji that become nouns,Page 2
+282,夜,名詞になる漢字,Kanji that become nouns,Page 2
+283,晩,名詞になる漢字,Kanji that become nouns,Page 2
+284,夕,名詞になる漢字,Kanji that become nouns,Page 2
+285,方,名詞になる漢字,Kanji that become nouns,Page 2
+286,時,名詞になる漢字,Kanji that become nouns,Page 2
+287,年,名詞になる漢字,Kanji that become nouns,Page 2
+288,今,名詞になる漢字,Kanji that become nouns,Page 2
+289,何,名詞になる漢字,Kanji that become nouns,Page 2
+290,宅,名詞になる漢字,Kanji that become nouns,Page 2
+291,家,名詞になる漢字,Kanji that become nouns,Page 2
+292,薬,名詞になる漢字,Kanji that become nouns,Page 2
+293,雪,名詞になる漢字,Kanji that become nouns,Page 2
+294,雲,名詞になる漢字,Kanji that become nouns,Page 2
+295,店,名詞になる漢字,Kanji that become nouns,Page 2
+296,国,名詞になる漢字,Kanji that become nouns,Page 2
+297,道,名詞になる漢字,Kanji that become nouns,Page 2
+298,寺,名詞になる漢字,Kanji that become nouns,Page 2
+299,奥,名詞になる漢字,Kanji that become nouns,Page 2
+300,外,名詞になる漢字,Kanji that become nouns,Page 2
+301,駅,名詞になる漢字,Kanji that become nouns,Page 2
+302,所,名詞になる漢字,Kanji that become nouns,Page 2
+303,市,名詞になる漢字,Kanji that become nouns,Page 2
+304,町,名詞になる漢字,Kanji that become nouns,Page 2
+305,村,名詞になる漢字,Kanji that become nouns,Page 2
+306,区,名詞になる漢字,Kanji that become nouns,Page 2
+307,都,名詞になる漢字,Kanji that become nouns,Page 2
+308,府,名詞になる漢字,Kanji that become nouns,Page 2
+309,県,名詞になる漢字,Kanji that become nouns,Page 2
+310,島,名詞になる漢字,Kanji that become nouns,Page 2
+311,数,名詞になる漢字,Kanji that become nouns,Page 2
+312,音,名詞になる漢字,Kanji that become nouns,Page 2
+313,色,名詞になる漢字,Kanji that become nouns,Page 2
+314,形,名詞になる漢字,Kanji that become nouns,Page 2
+315,味,名詞になる漢字,Kanji that become nouns,Page 2
+316,春,名詞になる漢字,Kanji that become nouns,Page 2
+317,夏,名詞になる漢字,Kanji that become nouns,Page 2
+318,秋,名詞になる漢字,Kanji that become nouns,Page 2
+319,冬,名詞になる漢字,Kanji that become nouns,Page 2
+320,点,名詞になる漢字,Kanji that become nouns,Page 2
+321,線,名詞になる漢字,Kanji that become nouns,Page 2
+322,者,名詞になる漢字,Kanji that become nouns,Page 2
+323,次,名詞になる漢字,Kanji that become nouns,Page 2
+324,窓,名詞になる漢字,Kanji that become nouns,Page 2
+325,服,名詞になる漢字,Kanji that become nouns,Page 2
+326,紙,名詞になる漢字,Kanji that become nouns,Page 2
+327,銀,名詞になる漢字,Kanji that become nouns,Page 2
+328,品,名詞になる漢字,Kanji that become nouns,Page 2
+329,空,名詞になる漢字,Kanji that become nouns,Page 2
+330,港,名詞になる漢字,Kanji that become nouns,Page 2
+331,横,名詞になる漢字,Kanji that become nouns,Page 2
+332,橋,名詞になる漢字,Kanji that become nouns,Page 2
+333,頭,名詞になる漢字,Kanji that become nouns,Page 2
+334,顔,名詞になる漢字,Kanji that become nouns,Page 2
+335,歯,名詞になる漢字,Kanji that become nouns,Page 2
+336,指,名詞になる漢字,Kanji that become nouns,Page 2
+337,原,名詞になる漢字,Kanji that become nouns,Page 2
+338,野,名詞になる漢字,Kanji that become nouns,Page 2
+339,風,名詞になる漢字,Kanji that become nouns,Page 2
+340,百,熟語になる漢字,Kanji that form compound words,Page 3
+341,千,熟語になる漢字,Kanji that form compound words,Page 3
+342,万,熟語になる漢字,Kanji that form compound words,Page 3
+343,学,熟語になる漢字,Kanji that form compound words,Page 3
+344,生,熟語になる漢字,Kanji that form compound words,Page 3
+345,先,熟語になる漢字,Kanji that form compound words,Page 3
+346,午,熟語になる漢字,Kanji that form compound words,Page 3
+347,毎,熟語になる漢字,Kanji that form compound words,Page 3
+348,週,熟語になる漢字,Kanji that form compound words,Page 3
+349,曜,熟語になる漢字,Kanji that form compound words,Page 3
+350,校,熟語になる漢字,Kanji that form compound words,Page 3
+351,計,熟語になる漢字,Kanji that form compound words,Page 3
+352,語,熟語になる漢字,Kanji that form compound words,Page 3
+353,室,熟語になる漢字,Kanji that form compound words,Page 3
+354,英,熟語になる漢字,Kanji that form compound words,Page 3
+355,電,熟語になる漢字,Kanji that form compound words,Page 3
+356,度,熟語になる漢字,Kanji that form compound words,Page 3
+357,病,熟語になる漢字,Kanji that form compound words,Page 3
+358,屋,熟語になる漢字,Kanji that form compound words,Page 3
+359,荷,熟語になる漢字,Kanji that form compound words,Page 3
+360,主,熟語になる漢字,Kanji that form compound words,Page 3
+361,部,熟語になる漢字,Kanji that form compound words,Page 3
+362,社,熟語になる漢字,Kanji that form compound words,Page 3
+363,院,熟語になる漢字,Kanji that form compound words,Page 3
+364,地,熟語になる漢字,Kanji that form compound words,Page 3
+365,鉄,熟語になる漢字,Kanji that form compound words,Page 3
+366,工,熟語になる漢字,Kanji that form compound words,Page 3
+367,場,熟語になる漢字,Kanji that form compound words,Page 3
+368,図,熟語になる漢字,Kanji that form compound words,Page 3
+369,館,熟語になる漢字,Kanji that form compound words,Page 3
+370,公,熟語になる漢字,Kanji that form compound words,Page 3
+371,園,熟語になる漢字,Kanji that form compound words,Page 3
+372,番,熟語になる漢字,Kanji that form compound words,Page 3
+373,号,熟語になる漢字,Kanji that form compound words,Page 3
+374,京,熟語になる漢字,Kanji that form compound words,Page 3
+375,様,熟語になる漢字,Kanji that form compound words,Page 3
+376,題,熟語になる漢字,Kanji that form compound words,Page 3
+377,宿,熟語になる漢字,Kanji that form compound words,Page 3
+378,政,熟語になる漢字,Kanji that form compound words,Page 3
+379,治,熟語になる漢字,Kanji that form compound words,Page 3
+380,経,熟語になる漢字,Kanji that form compound words,Page 3
+381,済,熟語になる漢字,Kanji that form compound words,Page 3
+382,歴,熟語になる漢字,Kanji that form compound words,Page 3
+383,史,熟語になる漢字,Kanji that form compound words,Page 3
+384,育,熟語になる漢字,Kanji that form compound words,Page 3
+385,化,熟語になる漢字,Kanji that form compound words,Page 3
+386,科,熟語になる漢字,Kanji that form compound words,Page 3
+387,医,熟語になる漢字,Kanji that form compound words,Page 3
+388,映,熟語になる漢字,Kanji that form compound words,Page 3
+389,画,熟語になる漢字,Kanji that form compound words,Page 3
+390,写,熟語になる漢字,Kanji that form compound words,Page 3
+391,真,熟語になる漢字,Kanji that form compound words,Page 3
+392,料,熟語になる漢字,Kanji that form compound words,Page 3
+393,組,熟語になる漢字,Kanji that form compound words,Page 3
+394,洋,熟語になる漢字,Kanji that form compound words,Page 3
+395,式,熟語になる漢字,Kanji that form compound words,Page 3
+396,和,熟語になる漢字,Kanji that form compound words,Page 3
+397,天,熟語になる漢字,Kanji that form compound words,Page 3
+398,仕,熟語になる漢字,Kanji that form compound words,Page 3
+399,事,熟語になる漢字,Kanji that form compound words,Page 3
+400,記,熟語になる漢字,Kanji that form compound words,Page 3
+401,議,熟語になる漢字,Kanji that form compound words,Page 3
+402,員,熟語になる漢字,Kanji that form compound words,Page 3
+403,商,熟語になる漢字,Kanji that form compound words,Page 3
+404,業,熟語になる漢字,Kanji that form compound words,Page 3
+405,農,熟語になる漢字,Kanji that form compound words,Page 3
+406,同,熟語になる漢字,Kanji that form compound words,Page 3
+407,試,熟語になる漢字,Kanji that form compound words,Page 3
+408,験,熟語になる漢字,Kanji that form compound words,Page 3
+409,面,熟語になる漢字,Kanji that form compound words,Page 3
+410,接,熟語になる漢字,Kanji that form compound words,Page 3
+411,結,熟語になる漢字,Kanji that form compound words,Page 3
+412,果,熟語になる漢字,Kanji that form compound words,Page 3
+413,特,熟語になる漢字,Kanji that form compound words,Page 3
+414,交,熟語になる漢字,Kanji that form compound words,Page 3
+415,機,熟語になる漢字,Kanji that form compound words,Page 3
+416,関,熟語になる漢字,Kanji that form compound words,Page 3
+417,局,熟語になる漢字,Kanji that form compound words,Page 3
+418,路,熟語になる漢字,Kanji that form compound words,Page 3
+419,故,熟語になる漢字,Kanji that form compound words,Page 3
+420,台,熟語になる漢字,Kanji that form compound words,Page 3
+421,具,熟語になる漢字,Kanji that form compound words,Page 3
+422,器,熟語になる漢字,Kanji that form compound words,Page 3
+423,辞,熟語になる漢字,Kanji that form compound words,Page 3
+424,雑,熟語になる漢字,Kanji that form compound words,Page 3
+425,誌,熟語になる漢字,Kanji that form compound words,Page 3
+426,資,熟語になる漢字,Kanji that form compound words,Page 3
+427,個,熟語になる漢字,Kanji that form compound words,Page 3
+428,価,熟語になる漢字,Kanji that form compound words,Page 3
+429,産,熟語になる漢字,Kanji that form compound words,Page 3
+430,期,熟語になる漢字,Kanji that form compound words,Page 3
+431,々,熟語になる漢字,Kanji that form compound words,Page 3
+432,情,熟語になる漢字,Kanji that form compound words,Page 3
+433,階,熟語になる漢字,Kanji that form compound words,Page 3
+434,設,熟語になる漢字,Kanji that form compound words,Page 3
+435,費,熟語になる漢字,Kanji that form compound words,Page 3
+436,位,熟語になる漢字,Kanji that form compound words,Page 3
+437,平,熟語になる漢字,Kanji that form compound words,Page 3
+438,両,熟語になる漢字,Kanji that form compound words,Page 3
+439,老,熟語になる漢字,Kanji that form compound words,Page 3
+440,族,熟語になる漢字,Kanji that form compound words,Page 3
+441,術,熟語になる漢字,Kanji that form compound words,Page 3
+442,効,熟語になる漢字,Kanji that form compound words,Page 3
+443,民,熟語になる漢字,Kanji that form compound words,Page 3
+444,論,熟語になる漢字,Kanji that form compound words,Page 3
+445,実,熟語になる漢字,Kanji that form compound words,Page 3
+446,類,熟語になる漢字,Kanji that form compound words,Page 3
+447,以,熟語になる漢字,Kanji that form compound words,Page 3
+448,共,熟語になる漢字,Kanji that form compound words,Page 3
+449,直,熟語になる漢字,Kanji that form compound words,Page 3
+450,初,熟語になる漢字,Kanji that form compound words,Page 3
+451,全,熟語になる漢字,Kanji that form compound words,Page 3
+452,最,熟語になる漢字,Kanji that form compound words,Page 3
+453,非,熟語になる漢字,Kanji that form compound words,Page 3
+454,第,熟語になる漢字,Kanji that form compound words,Page 3
+455,的,熟語になる漢字,Kanji that form compound words,Page 3
+456,性,熟語になる漢字,Kanji that form compound words,Page 3
+457,法,熟語になる漢字,Kanji that form compound words,Page 3
+458,制,熟語になる漢字,Kanji that form compound words,Page 3
+459,課,熟語になる漢字,Kanji that form compound words,Page 3
+460,練(習),-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+461,勉(強),-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+462,研究,-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+463,留(学),-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+464,質問,-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+465,(結)婚,-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+466,離(婚),-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+467,欠席,-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+468,予定,-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+469,(生)活,-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+470,運転,-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+471,説(明),-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+472,合格,-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+473,旅(行),-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+474,(予)約,-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+475,案内,-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+476,準備,-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+477,相談,-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+478,連絡,-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+479,(出)発,-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+480,到(着),-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+481,注(意),-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+482,営(業),-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+483,用(意),-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+484,報告,-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+485,完成,-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+486,放(送),-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+487,心配,-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+488,退(院),-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+489,卒(業),-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+490,失礼,-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+491,(比)較,-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+492,反対,-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+493,賛(成),-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+494,表現,-スル動詞の漢字,Kanji that become -suru verbs,Page 3
+495,(話),-スル動詞の漢字 (Unlisted Helper),Kanji that become -suru verbs,Page 3
+496,(作),-スル動詞の漢字 (Unlisted Helper),Kanji that become -suru verbs,Page 3
+497,(使),-スル動詞の漢字 (Unlisted Helper),Kanji that become -suru verbs,Page 3
+498,(始),-スル動詞の漢字 (Unlisted Helper),Kanji that become -suru verbs,Page 3
+499,(終),-スル動詞の漢字 (Unlisted Helper),Kanji that become -suru verbs,Page 3
+500,(画),-スル動詞の漢字 (Unlisted Helper),Kanji that become -suru verbs,Page 3

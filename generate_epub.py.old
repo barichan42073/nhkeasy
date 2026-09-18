@@ -1,0 +1,167 @@
+import json
+import os
+import subprocess
+
+JSON_INPUT_PATH = "weather.json"
+XHTML_INTERMEDIATE = "article.xhtml"
+EPUB_OUTPUT_PATH = "nhk_weather.epub"
+
+def load_split_data_into_paragraphs(json_path, sentences_per_paragraph=3):
+    """
+    Extracts sentences and combines them into larger true paragraphs 
+    so the book reads cohesively instead of feeling like individual sentence footnotes.
+    """
+    if not os.path.exists(json_path):
+        return "NHK News Article", "This is news from the Soccer World Cup.", [], []
+        
+    with open(json_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+        
+    title_jp = data.get("title", "NHK News Article").strip()
+    title_en = data.get("title_en", "This is news from the Soccer World Cup.").strip()
+    sentences_data = data.get("sentences", [])
+    
+    jp_sentences = []
+    en_sentences = []
+    
+    for s in sentences_data:
+        if s.get("is_title", False):
+            continue
+            
+        jp_text = s.get("jp", "").strip()
+        en_text = s.get("en", "").strip()
+        
+        # --- RULE 2: WHITESPACE PADDING FOR HYPHENS/DASHES ---
+        if "-" in jp_text:
+            jp_text = jp_text.replace("-", " - ")
+        if "〜" in jp_text:
+            jp_text = jp_text.replace("〜", " 〜 ")
+            
+        if "-" in en_text:
+            en_text = en_text.replace("-", " - ")
+            
+        if jp_text:
+            jp_sentences.append(jp_text)
+        if en_text:
+            en_sentences.append(en_text)
+            
+    # Chunk individual sentences into cohesive multiline paragraphs
+    jp_paragraphs = []
+    en_paragraphs = []
+    
+    for i in range(0, len(jp_sentences), sentences_per_paragraph):
+        jp_chunk = "".join(jp_sentences[i:i + sentences_per_paragraph])
+        # English paragraphs flow better joined with spaces
+        en_chunk = " ".join(en_sentences[i:i + sentences_per_paragraph])
+        
+        if jp_chunk:
+            jp_paragraphs.append(jp_chunk)
+        if en_chunk:
+            en_paragraphs.append(en_chunk)
+            
+    return title_jp, title_en, jp_paragraphs, en_paragraphs
+
+def build_split_view_xhtml(title_jp, title_en, jp_paras, en_paras):
+    """
+    Compiles a clean XHTML document linking true paragraph blocks 
+    closely together to eliminate Kindle layout clipping bugs.
+    """
+    # --- RULE 1: ENTITY RESTRICTION & ESCAPING ---
+    safe_title_jp = title_jp.replace("&", "&#38;").replace("<", "&#60;").replace(">", "&#62;")
+    safe_title_en = title_en.replace("&", "&#38;").replace("<", "&#60;").replace(">", "&#62;")
+    
+    body_html = []
+    
+    # Iterate through both sets simultaneously to bind them structurally
+    for i, (jp_para, en_para) in enumerate(zip(jp_paras, en_paras)):
+        safe_jp = jp_para.replace("&", "&#38;").replace("<", "&#60;").replace(">", "&#62;")
+        safe_en = en_para.replace("&", "&#38;").replace("<", "&#60;").replace(">", "&#62;")
+        
+        # Wrap each parallel pair in a dedicated block element
+        body_html.append(f'    <div class="bilingual-block">\n')
+        body_html.append(f'        <p class="source-jp" lang="ja">{safe_jp}</p>\n')
+        body_html.append(f'        <p class="translation-en" lang="en">{safe_en}</p>\n')
+        body_html.append(f'    </div>\n')
+        
+    sections_str = "".join(body_html)
+
+    xhtml_template = f"""<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja">
+<head>
+    <title>{safe_title_jp}</title>
+    <style type="text/css">
+        body {{
+            font-family: "Noto Sans CJK JP", "Noto Sans JP", sans-serif;
+            line-height: 1.7;
+            padding: 4% 5%;
+        }}
+        h1 {{ text-align: center; font-size: 1.4em; margin-top: 1em; margin-bottom: 0.5em; }}
+        h2 {{ text-align: center; font-size: 1.1em; color: #555555; margin-bottom: 2em; font-weight: normal; }}
+        
+        /* Container keeping JP and EN paired smoothly together */
+        .bilingual-block {{
+            margin-bottom: 2em;
+            page-break-inside: avoid;
+            break-inside: avoid;
+            display: block;
+        }}
+        
+        /* Japanese Text Styling */
+        p.source-jp {{
+            text-indent: 1em; 
+            margin: 0 0 0.3em 0; 
+            text-align: justify;
+            color: #000000;
+        }}
+        
+        /* English "Footnote" Sub-text Styling */
+        p.translation-en {{
+            text-indent: 0;
+            margin: 0;
+            padding-left: 1.2em; /* Indent slightly to denote it's a translation/footnote */
+            text-align: justify;
+            font-size: 0.88em;    /* Smaller scale for footnotes appearance */
+            color: #555555;       /* Muted tone to match footnote context */
+            line-height: 1.5;
+        }}
+    </style>
+</head>
+<body>
+    <h1>{safe_title_jp}</h1>
+    <h2>{safe_title_en}</h2>
+
+{sections_str}
+</body>
+</html>
+"""
+    return xhtml_template
+
+def run_pipeline():
+    # We pass 'sentences_per_paragraph=3' to bundle sentences together. 
+    # Change this number to alter your paragraph lengths!
+    title_jp, title_en, jp_paras, en_paras = load_split_data_into_paragraphs(JSON_INPUT_PATH, sentences_per_paragraph=3)
+    
+    xhtml_out = build_split_view_xhtml(title_jp, title_en, jp_paras, en_paras)
+    
+    with open(XHTML_INTERMEDIATE, "w", encoding="utf-8") as f:
+        f.write(xhtml_out)
+        
+    try:
+        subprocess.run([
+            "ebook-convert",
+            XHTML_INTERMEDIATE,
+            EPUB_OUTPUT_PATH,
+            "--language", "ja",
+            "--title", title_jp,
+            "--authors", "NHK News Split-Parser"
+        ], check=True)
+        print(f"\nSuccess! Reconfigured true paragraph Split-View EPUB -> {EPUB_OUTPUT_PATH}")
+    except FileNotFoundError:
+        print("\nError: Calibre compiler tool 'ebook-convert' not found.")
+    finally:
+        if os.path.exists(XHTML_INTERMEDIATE):
+            os.remove(XHTML_INTERMEDIATE)
+
+if __name__ == "__main__":
+    run_pipeline()

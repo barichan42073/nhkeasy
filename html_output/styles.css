@@ -1,0 +1,417 @@
+:root {                                                                                                                             
+    --red: #e60012;                                                                                                                 
+    --ink: #222;                                                                                                                    
+    --muted: #777;                                                                                                                  
+    --line: #ddd;                                                                                                                   
+    --bg: #f5f5f5;                                                                                                                  
+                                                                                                                                    
+    /* Interactive article page specific colors - retain existing for article page */                                               
+    --nhk-blue: #004098; /* Example of a retained color, adjust as needed if interactive page also needs red branding */            
+    --article-bg: #f3f7f9; /* Retained background for interactive article page */                                                   
+    --text-main: #333333; /* Retained text color for interactive article page */                                                    
+    --sidebar-w: 420px; /* Retained sidebar width for interactive article page */                                                   
+}                                                                                                                                   
+                                                                                                                                    
+/* Base styles from nhk_easy_front_page_2026-09-07.html for index page */                                                           
+* {                                                                                                                                 
+    box-sizing: border-box;                                                                                                         
+}                                                                                                                                   
+                                                                                                                                    
+body {                                                                                                                              
+    margin: 0;                                                                                                                      
+    background: var(--bg);                                                                                                          
+    font-family: -apple-system, BlinkMacSystemFont, "Noto Sans JP", "Yu Gothic", sans-serif;                                        
+    color: var(--ink);                                                                                                              
+    /* For the index page, we want the body to naturally scroll */                                                                  
+    /* Interactive page overrides body for full-height flex layout */                                                               
+    overflow-y: auto; /* Allow scrolling for content that exceeds viewport height on index page */                                  
+    display: block; /* Override potential flex from interactive page if applied globally */                                         
+    height: auto;   /* Override potential 100vh from interactive page if applied globally */                                        
+}                                                                                                                                   
+                                                                                                                                    
+/* Index page specific elements */                                                                                                  
+header {                                                                                                                            
+    background: #fff;                                                                                                               
+    border-top: 5px solid var(--red);                                                                                               
+    border-bottom: 1px solid var(--line);                                                                                           
+}                                                                                                                                   
+                                                                                                                                    
+.head {                                                                                                                             
+    max-width: 1100px;                                                                                                              
+    margin: auto;                                                                                                                   
+    padding: 18px 22px;                                                                                                             
+    display: flex;                                                                                                                  
+    align-items: flex-end; /* Changed from 'end' for broader browser compatibility */                                               
+    justify-content: space-between;                                                                                                 
+}                                                                                                                                   
+                                                                                                                                    
+.logo {                                                                                                                             
+    font-size: 28px;                                                                                                                
+    font-weight: 800;                                                                                                               
+    letter-spacing: .02em;                                                                                                          
+}                                                                                                                                   
+                                                                                                                                    
+.logo span {                                                                                                                        
+    color: var(--red);                                                                                                              
+}                                                                                                                                   
+                                                                                                                                    
+.date {                                                                                                                             
+    font-size: 14px;                                                                                                                
+    color: var(--muted);                                                                                                            
+}                                                                                                                                   
+                                                                                                                                    
+main {                                                                                                                              
+    max-width: 1100px;                                                                                                              
+    margin: 24px auto;                                                                                                              
+    padding: 0 22px;                                                                                                                
+}                                                                                                                                   
+                                                                                                                                    
+.lead {                                                                                                                             
+    background: #fff;                                                                                                               
+    border: 1px solid var(--line);                                                                                                  
+    margin-bottom: 18px;                                                                                                            
+    text-decoration: none; /* Make lead link appear as a block with text styles */                                                  
+    color: inherit;                                                                                                                 
+    display: block;                                                                                                                 
+}                                                                                                                                   
+                                                                                                                                    
+.lead .photo {                                                                                                                      
+    height: 330px;                                                                                                                  
+}                                                                                                                                   
+                                                                                                                                    
+.card .photo {                                                                                                                      
+    height: 170px;                                                                                                                  
+}                                                                                                                                   
+                                                                                                                                    
+.photo {                                                                                                                            
+    position: relative;                                                                                                             
+    overflow: hidden;                                                                                                               
+    background: #ddd;                                                                                                               
+}                                                                                                                                   
+                                                                                                                                    
+.photo img {                                                                                                                        
+    width: 100%;                                                                                                                    
+    height: 100%;                                                                                                                   
+    object-fit: cover;                                                                                                              
+    display: block;                                                                                                                 
+}                                                                                                                                   
+                                                                                                                                    
+.photo .fallback {                                                                                                                  
+    position: absolute;                                                                                                             
+    inset: 0;                                                                                                                       
+    display: flex;                                                                                                                  
+    align-items: center;                                                                                                            
+    justify-content: center;                                                                                                        
+    background: linear-gradient(135deg, #777, #aaa);                                                                                
+    color: #fff;                                                                                                                    
+    font-size: 15px;                                                                                                                
+}                                                                                                                                   
+                                                                                                                                    
+.photo .source {                                                                                                                    
+    position: absolute;                                                                                                             
+    right: 8px;                                                                                                                     
+    bottom: 7px;                                                                                                                    
+    background: rgba(0, 0, 0, .65);                                                                                                 
+    color: #fff;                                                                                                                    
+    padding: 3px 6px;                                                                                                               
+    font-size: 11px;                                                                                                                
+}                                                                                                                                   
+                                                                                                                                    
+.body {                                                                                                                             
+    padding: 16px 18px 19px;                                                                                                        
+}                                                                                                                                   
+                                                                                                                                    
+.kicker {                                                                                                                           
+    font-size: 13px;                                                                                                                
+    color: var(--red);                                                                                                              
+    font-weight: 700;                                                                                                               
+    margin-bottom: 7px;                                                                                                             
+}                                                                                                                                   
+                                                                                                                                    
+h1 {
+    font-size: 28px;
+    line-height: 1.42;
+    margin: 0;
+    font-weight: 800;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+}
+
+.card {
+    background: #fff;
+    border: 1px solid var(--line);
+    text-decoration: none;                                                                                                          
+    color: inherit;                                                                                                                 
+    display: block;                                                                                                                 
+}                                                                                                                                   
+                                                                                                                                    
+.card h2 {                                                                                                                          
+    font-size: 21px;                                                                                                                
+    line-height: 1.5;                                                                                                               
+    margin: 0;                                                                                                                      
+    font-weight: 800;                                                                                                               
+}                                                                                                                                   
+                                                                                                                                    
+.card:hover,                                                                                                                        
+.lead:hover {                                                                                                                       
+    box-shadow: 0 2px 12px rgba(0, 0, 0, .1);                                                                                       
+}                                                                                                                                   
+                                                                                                                                    
+.meta {                                                                                                                             
+    margin-top: 9px;                                                                                                                
+    color: var(--muted);                                                                                                            
+    font-size: 12px;                                                                                                                
+}                                                                                                                                   
+                                                                                                                                    
+footer {                                                                                                                            
+    max-width: 1100px;                                                                                                              
+    margin: 25px auto;                                                                                                              
+    padding: 0 22px 30px;                                                                                                           
+    color: #777;                                                                                                                    
+    font-size: 12px;                                                                                                                
+}                                                                                                                                   
+                                                                                                                                    
+/* Media queries for index page from nhk_easy_front_page_2026-09-07.html */                                                         
+@media (max-width: 700px) {                                                                                                         
+    .head {                                                                                                                         
+        padding: 14px 16px;                                                                                                         
+    }                                                                                                                               
+                                                                                                                                    
+    .logo {                                                                                                                         
+        font-size: 23px;                                                                                                            
+    }                                                                                                                               
+                                                                                                                                    
+    main {                                                                                                                          
+        padding: 0 12px;                                                                                                            
+        margin-top: 14px;                                                                                                           
+    }                                                                                                                               
+                                                                                                                                    
+    .lead .photo {                                                                                                                  
+        height: 220px;                                                                                                              
+    }                                                                                                                               
+                                                                                                                                    
+    .grid {                                                                                                                         
+        grid-template-columns: 1fr;                                                                                                 
+    }                                                                                                                               
+                                                                                                                                    
+    .card .photo {                                                                                                                  
+        height: 190px;                                                                                                              
+    }                                                                                                                               
+                                                                                                                                    
+    h1 {                                                                                                                            
+        font-size: 22px;                                                                                                            
+    }                                                                                                                               
+                                                                                                                                    
+    .card h2 {                                                                                                                      
+        font-size: 19px;                                                                                                            
+    }                                                                                                                               
+}                                                                                                                                   
+                                                                                                                                    
+/* Interactive Article Page Styles - these should apply to article.html, not index.html */                                          
+/* We'll make sure these don't interfere with the index page layout */                                                              
+                                                                                                                                    
+/* This body style should specifically apply when rendering the interactive article page, not globally.                             
+   The index page's body styles take precedence for its own layout. */                                                              
+body.interactive-article-page { /* Added a class for the interactive page body */                                                   
+    display: flex;                                                                                                                  
+    height: 100vh;                                                                                                                  
+    overflow: hidden;                                                                                                               
+    background: var(--article-bg); /* Use specific background for article page */                                                   
+    color: var(--text-main);                                                                                                        
+    font-family: "Noto Sans CJK JP", sans-serif; /* Ensure consistent font for article */                                           
+}                                                                                                                                   
+                                                                                                                                    
+#main-content {                                                                                                                     
+    flex: 1;                                                                                                                        
+    padding: 40px 60px;                                                                                                             
+    overflow-y: auto;                                                                                                               
+    background: white;                                                                                                              
+    box-sizing: border-box;                                                                                                         
+}                                                                                                                                   
+                                                                                                                                    
+.article-inner {                                                                                                                    
+    width: 100%;                                                                                                                    
+    max-width: 750px;                                                                                                               
+}                                                                                                                                   
+                                                                                                                                    
+/* Article title and body text specific styles */                                                                                   
+.article-title {                                                                                                                    
+    font-size: 1.8rem;                                                                                                              
+    font-weight: 800;                                                                                                               
+    line-height: 1.6;                                                                                                               
+    border-bottom: 1px solid #eee;                                                                                                  
+    padding-bottom: 15px;                                                                                                           
+}                                                                                                                                   
+                                                                                                                                    
+.article-body-text {                                                                                                                
+    line-height: 3.2;                                                                                                               
+    font-size: 1.5rem;                                                                                                              
+    color: var(--text-main);                                                                                                        
+    margin-bottom: 2.2em;                                                                                                           
+}                                                                                                                                   
+                                                                                                                                    
+.article-title,                                                                                                                     
+.article-body-text {                                                                                                                
+    transition: background-color 0.15s, box-shadow 0.15s;                                                                           
+    border-radius: 10px;                                                                                                            
+}                                                                                                                                   
+                                                                                                                                    
+.article-title:hover,                                                                                                               
+.article-body-text:hover {                                                                                                          
+    background-color: #f8fbff;                                                                                                      
+    background-color: #f8fbff;                                                                                                      
+    background-color: #f8fbff;                                                                                                      
+    background-color: #f8fbff;                                                                                                      
+}                                                                                                                                   
+                                                                                                                                    
+.sentence-active {                                                                                                                  
+    background-color: #E6F7FF;                                                                                                      
+}                                                                                                                                   
+                                                                                                                                    
+ruby {                                                                                                                              
+    ruby-position: over;                                                                                                            
+    ruby-align: center;                                                                                                             
+}                                                                                                                                   
+                                                                                                                                    
+rt {                                                                                                                                
+    font-size: 0.55em;                                                                                                              
+    color: #777;                                                                                                                    
+    visibility: visible;                                                                                                            
+}                                                                                                                                   
+                                                                                                                                    
+body.show-furigana ruby:hover rt {                                                                                                  
+    visibility: visible;                                                                                                            
+}                                                                                                                                   
+                                                                                                                                    
+.mode-none rt {                                                                                                                     
+    visibility: hidden;                                                                                                             
+}                                                                                                                                   
+                                                                                                                                    
+.mode-hard rt {                                                                                                                     
+    visibility: hidden;                                                                                                             
+}                                                                                                                                   
+                                                                                                                                    
+.mode-hard .n1 rt,                                                                                                                  
+.mode-hard .n2 rt {                                                                                                                 
+    visibility: visible;                                                                                                            
+}                                                                                                                                   
+                                                                                                                                    
+.word-token {                                                                                                                       
+    cursor: pointer;                                                                                                                
+    transition: background 0.1s;                                                                                                    
+}                                                                                                                                   
+                                                                                                                                    
+.word-token:hover {                                                                                                                 
+    background-color: #f0f7ff;                                                                                                      
+    color: var(--nhk-blue);                                                                                                         
+}                                                                                                                                   
+                                                                                                                                    
+.word-active {                                                                                                                      
+    background-color: #fff3cd;                                                                                                      
+    border-radius: 4px;                                                                                                             
+}                                                                                                                                   
+                                                                                                                                    
+.controls {                                                                                                                         
+    position: fixed;                                                                                                                
+    bottom: 30px;                                                                                                                   
+    left: 40%;                                                                                                                      
+    transform: translateX(-50%);                                                                                                    
+    background: white;                                                                                                              
+    padding: 8px;                                                                                                                   
+    border-radius: 50px;                                                                                                            
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);                                                                                      
+    display: flex;                                                                                                                  
+    gap: 8px;                                                                                                                       
+    z-index: 100;                                                                                                                   
+}                                                                                                                                   
+                                                                                                                                    
+button {                                                                                                                            
+    border: none;                                                                                                                   
+    padding: 10px 24px;                                                                                                             
+    border-radius: 20px;                                                                                                            
+    cursor: pointer;                                                                                                                
+    background: #f1f5f9;                                                                                                            
+    font-weight: 600;                                                                                                               
+    transition: 0.2s;                                                                                                               
+}                                                                                                                                   
+                                                                                                                                    
+button.active {                                                                                                                     
+    background: var(--nhk-blue);                                                                                                    
+    color: white;                                                                                                                   
+}                                                                                                                                   
+                                                                                                                                    
+.translation-container {                                                                                                            
+    margin-top: 80px;                                                                                                               
+    padding-top: 40px;                                                                                                              
+    border-top: 5px solid var(--article-bg); /* Use article-specific background color */                                            
+}                                                                                                                                   
+                                                                                                                                    
+.translation-container h3 {                                                                                                         
+    color: var(--nhk-blue);                                                                                                         
+    margin-bottom: 30px;                                                                                                            
+    font-size: 1.6rem;                                                                                                              
+}                                                                                                                                   
+                                                                                                                                    
+.translation-pair {                                                                                                                 
+    margin-bottom: 25px;                                                                                                            
+    padding-bottom: 15px;                                                                                                           
+    border-bottom: 1px solid #f0f0f0;                                                                                               
+}                                                                                                                                   
+                                                                                                                                    
+.ja-orig {                                                                                                                          
+    font-size: 0.9rem;                                                                                                              
+    color: #888;                                                                                                                    
+    margin-bottom: 8px;                                                                                                             
+    font-style: italic;                                                                                                             
+}                                                                                                                                   
+                                                                                                                                    
+.en-trans {                                                                                                                         
+    font-size: 1.2rem;                                                                                                              
+    color: #222;                                                                                                                    
+    font-weight: 500;                                                                                                               
+    line-height: 1.5;                                                                                                               
+}                                                                                                                                   
+                                                                                                                                    
+.sidebar {                                                                                                                          
+    width: var(--sidebar-w);                                                                                                        
+    min-width: var(--sidebar-w);                                                                                                    
+    padding: 30px;                                                                                                                  
+    background: #ffffff;                                                                                                            
+    border-left: 1px solid #e2e8f0;                                                                                                 
+    overflow-y: auto;                                                                                                               
+}                                                                                                                                   
+                                                                                                                                    
+.sidebar-card {                                                                                                                     
+    background: #f8fafc;                                                                                                            
+    padding: 25px;                                                                                                                  
+    border-radius: 16px;                                                                                                            
+    border: 1px solid #e2e8f0;                                                                                                      
+}
+
+/* Article Page Header Overrides */
+#article-header {
+    background: #fff;
+    border-top: 5px solid var(--red);
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 20px; /* Space between header and content container */
+}
+
+#article-header .head {
+    max-width: 1200px; /* Match article content width */
+    margin: 0 auto;    /* Center the head content */
+    padding: 18px 20px; /* Match container padding for left/right, keep top/bottom from index */
+    justify-content: flex-start; /* Align logo to the left, no date to space out */
+}
+
+#article-header .logo {
+    font-size: 28px; /* Keep consistent with index page banner size */
+}
+
+#article-header .logo span {
+    color: var(--red); /* Use the defined red color */
+}
+                              

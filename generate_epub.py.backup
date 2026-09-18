@@ -1,0 +1,321 @@
+import argparse
+import json
+import os
+import re
+import subprocess
+from datetime import datetime
+
+# Default paths if arguments are not provided
+DEFAULT_JSON_INPUT_PATH = "nhk_kokushobi1.json"
+DEFAULT_EPUB_OUTPUT_PATH = "nhk_weather.epub"
+XHTML_INTERMEDIATE = "article.xhtml"
+
+# Functional grammar & particle stop-list (hiragana particles/auxiliaries)
+PARTICLE_STOP_LIST = {
+    "に", "で", "て", "と", "も", "は", "が", "を", "の", "へ", "から", 
+    "まで", "より", "ね", "よ", "な", "か", "し", "やら", "だ", "です", 
+    "ます", "ある", "いる", "する", "なる", "た", "ない", "ん"
+}
+
+# Universal POS tags / Sudachi POS tags for particles & functional words
+EXCLUDED_POS = {
+    "ADP", "AUX", "PART", "SCONJ", "CCONJ", "PUNCT", "SYM", "SPACE",
+    "助詞", "助動詞", "記号", "補助記号"
+}
+
+
+def get_hiragana_reading(token):
+    """
+    Extracts hiragana reading from token fields (reading, kana, etc.)
+    and converts katakana to hiragana if necessary.
+    """
+    raw_reading = token.get("reading") or token.get("kana") or token.get("hiragana") or ""
+    clean_reading = re.sub(r'<[^>]*>', '', raw_reading).strip()
+    
+    hiragana = []
+    for char in clean_reading:
+        code = ord(char)
+        if 0x30A1 <= code <= 0x30F6:  # Katakana range
+            hiragana.append(chr(code - 0x60))
+        else:
+            hiragana.append(char)
+            
+    return "".join(hiragana)
+
+
+def should_include_vocab(token):
+    """
+    Determines whether a token should be included in the EPUB vocabulary legend.
+    Filters out punctuation, functional grammar particles, auxiliaries, and false dictionary matches.
+    """
+    translation = (token.get("translation") or "").strip()
+    surface = (token.get("surface") or token.get("text") or "").strip()
+    lemma = (token.get("base") or token.get("lemma") or surface).strip()
+    pos = (token.get("pos") or "").upper()
+    pos_detail = token.get("pos_detail") or ""
+    
+    # 1. Reject empty text or missing translation
+    if not surface or not translation:
+        return False
+
+    # 2. Reject by Part of Speech (ADP/Particle/Auxiliary/Punctuation)
+    if pos in EXCLUDED_POS:
+        return False
+    for ex_pos in EXCLUDED_POS:
+        if ex_pos in pos_detail:
+            return False
+
+    # 3. Reject stop-list particles and single-character hiragana auxiliary words
+    if surface in PARTICLE_STOP_LIST or lemma in PARTICLE_STOP_LIST:
+        return False
+
+    # 4. Respect upstream selectability / kanji flags if available
+    if "is_selectable" in token:
+        return bool(token["is_selectable"])
+
+    # 5. Fallback rule: Ignore single-character pure hiragana/katakana tokens 
+    # unless they carry meaningful content
+    has_kanji = token.get("has_kanji", any('\u4e00' <= c <= '\u9faf' for c in surface))
+    if not has_kanji and len(surface) <= 1:
+        return False
+
+    return True
+
+
+def load_split_data_into_paragraphs(json_file_path, sentences_per_paragraph=3):
+    """
+    Loads JSON data and groups sentences into chunked paragraphs.
+    Extracts Japanese text, English translations, and vocabulary entries.
+    """
+    with open(json_file_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+        
+    title_jp = data.get("title_jp", data.get("title", "NHK News Article"))
+    title_en = data.get("title_en", "")
+    pub_timestamp = data.get("timestamp") or datetime.now().strftime("%Y-%m-%d %H:%M")
+    
+    sentences = data.get("sentences", [])
+    
+    jp_paragraphs = []
+    en_paragraphs = []
+    vocab_paragraphs = []
+    
+    curr_jp = []
+    curr_en = []
+    curr_vocab = []
+    seen_vocab_keys = set()
+    
+    for i, s in enumerate(sentences):
+        jp_text = s.get("jp") or s.get("text_jp") or ""
+        en_text = s.get("en") or s.get("translation_en") or s.get("translation") or ""
+        
+        if jp_text:
+            curr_jp.append(jp_text)
+        if en_text:
+            curr_en.append(en_text)
+            
+        for token in s.get("tokens", []):
+            if should_include_vocab(token):
+                surface = (token.get("surface") or token.get("text") or "").strip()
+                reading = get_hiragana_reading(token)
+                level = (token.get("level") or token.get("jlpt_level") or "N/A").upper()
+                trans = (token.get("translation") or "").strip()
+                
+                # Sanitize parentheses to maintain safe XHTML structures
+                trans = trans.replace("(te-form)", "TEFORM").replace("(", "[").replace(")", "]")
+                
+                vocab_key = f"{surface}_{reading}"
+                if vocab_key not in seen_vocab_keys:
+                    seen_vocab_keys.add(vocab_key)
+                    if reading and reading != surface:
+                        formatted_item = f"{surface} ({reading} - {level}) : {trans}"
+                    else:
+                        formatted_item = f"{surface} ({level}) : {trans}"
+                    curr_vocab.append(formatted_item)
+                    
+        if (i + 1) % sentences_per_paragraph == 0 or (i + 1) == len(sentences):
+            if curr_jp:
+                jp_paragraphs.append(" ".join(curr_jp))
+            if curr_en:
+                en_paragraphs.append(" ".join(curr_en))
+            vocab_paragraphs.append(list(curr_vocab))
+            
+            curr_jp = []
+            curr_en = []
+            curr_vocab = []
+            seen_vocab_keys = set()
+            
+    return title_jp, title_en, pub_timestamp, jp_paragraphs, en_paragraphs, vocab_paragraphs
+
+
+def build_split_view_xhtml(title_jp, title_en, pub_timestamp, jp_paras, en_paras, vocab_paras):
+    """
+    Builds strict XHTML output for conversion into EPUB via Calibre / ebook-convert.
+    """
+    num_chunks = max(len(jp_paras), len(en_paras))
+    
+    body_blocks = []
+    for i in range(num_chunks):
+        jp_text = jp_paras[i] if i < len(jp_paras) else ""
+        en_text = en_paras[i] if i < len(en_paras) else ""
+        
+        # Add bidirectional translation link [訳]
+        chunk_html = f"""
+        <div id="chunk-{i}" class="page-block">
+            <p class="ja-text">
+                {jp_text} 
+                <a class="app-link" href="#appendix-{i}">[&#31120; Vocab]</a>
+            </p>
+            <p class="en-text">{en_text}</p>
+        </div>
+        """
+        body_blocks.append(chunk_html)
+        
+    appendix_blocks = []
+    for i in range(num_chunks):
+        vocab_items = vocab_paras[i] if i < len(vocab_paras) else []
+        
+        vocab_list_items = ""
+        if vocab_items:
+            for item in vocab_items:
+                vocab_list_items += f"<li>{item}</li>\n"
+        else:
+            vocab_list_items = "<li>No specific vocabulary logged for this chunk.</li>"
+            
+        app_html = f"""
+        <div id="appendix-{i}" class="page-block">
+            <h2>Appendix for Section {i + 1}</h2>
+            <ul class="vocab-list">
+                {vocab_list_items}
+            </ul>
+            <p><a class="app-link" href="#chunk-{i}">[&#25戻る Return to Text]</a></p>
+        </div>
+        """
+        appendix_blocks.append(app_html)
+        
+    xhtml_doc = f"""<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="ja" lang="ja">
+<head>
+    <meta charset="utf-8" />
+    <title>{title_jp}</title>
+    <style type="text/css">
+        body {{
+            font-family: "Noto Sans CJK JP", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+            line-height: 1.6;
+            margin: 1em;
+        }}
+        .page-block {{
+            page-break-after: always;
+            break-after: page;
+            page-break-inside: avoid;
+            margin-bottom: 2em;
+        }}
+        .ja-text {{
+            font-size: 1.18em;
+            color: #111111;
+            margin-bottom: 0.6em;
+        }}
+        .en-text {{
+            font-size: 0.85em;
+            line-height: 1.35;
+            color: #444444;
+        }}
+        .app-link {{
+            font-size: 0.8em;
+            color: #0066cc;
+            text-decoration: none;
+            margin-left: 0.5em;
+        }}
+        ul.vocab-list {{
+            list-style-type: square;
+            padding-left: 1.2em;
+        }}
+        ul.vocab-list li {{
+            margin-bottom: 0.4em;
+            font-size: 0.9em;
+        }}
+        .cover-title {{
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 0.5em;
+        }}
+        .cover-subtitle {{
+            font-size: 1.1em;
+            color: #555555;
+            margin-bottom: 1em;
+        }}
+        .cover-timestamp {{
+            font-size: 0.85em;
+            color: #777777;
+            border-top: 1px solid #ccc;
+            padding-top: 0.5em;
+        }}
+    </style>
+</head>
+<body>
+
+    <div class="page-block">
+        <div class="cover-title">{title_jp}</div>
+        <div class="cover-subtitle">{title_en}</div>
+        <div class="cover-timestamp">Generated: {pub_timestamp}</div>
+    </div>
+
+    {''.join(body_blocks)}
+
+    <h1 style="page-break-before: always; break-before: page;">Appendices: Vocabulary Lists</h1>
+    {''.join(appendix_blocks)}
+
+</body>
+</html>
+"""
+    return xhtml_doc
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Generate bilingual EPUB files from NHK News JSON articles.")
+    
+    parser.add_argument(
+        "-i", "--input", 
+        default=DEFAULT_JSON_INPUT_PATH,
+        help="Path to the input JSON file"
+    )
+    parser.add_argument(
+        "-o", "--output", 
+        default=DEFAULT_EPUB_OUTPUT_PATH,
+        help="Path where output EPUB should be saved"
+    )
+    
+    args = parser.parse_args()
+    
+    json_input = args.input
+    epub_output = args.output
+    
+    print(f"Reading: {json_input}")
+    print(f"Target:  {epub_output}")
+    
+    title_jp, title_en, pub_timestamp, jp_paras, en_paras, vocab_paras = load_split_data_into_paragraphs(json_input, sentences_per_paragraph=3)
+    
+    xhtml_out = build_split_view_xhtml(title_jp, title_en, pub_timestamp, jp_paras, en_paras, vocab_paras)
+    
+    with open(XHTML_INTERMEDIATE, "w", encoding="utf-8") as f:
+        f.write(xhtml_out)
+        
+    try:
+        subprocess.run([
+            "ebook-convert",
+            XHTML_INTERMEDIATE,
+            epub_output,
+            "--language", "ja",
+            "--title", title_jp,
+            "--authors", "NHK News Split-Parser"
+        ], check=True)
+        
+        print(f"\nSuccess! Built EPUB with full sentences and vocabulary legend -> {epub_output}")
+    except FileNotFoundError:
+        print("\nWarning: 'ebook-convert' (Calibre) was not found in PATH.")
+        print(f"Saved intermediate XHTML file to '{XHTML_INTERMEDIATE}'.")
+
+
+if __name__ == "__main__":
+    main()

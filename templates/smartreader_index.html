@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NHK Easy News — {{ current_date_japanese_title }}</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header>
+  <div class="head">
+    <div class="logo"><span>NHK</span> EASY NEWS</div>
+    <div class="date">{{ current_date_japanese }}</div>
+  </div>
+</header>
+
+<main>
+  {% if lead_article %}
+  <a class="lead" href="{{ lead_article.relative_path }}" target="_blank" rel="noopener">
+    <div class="photo">
+      <img src="{{ lead_article.image_url }}"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="fallback" style="display:none">NHKの写真を読み込めませんでした</div>
+      <div class="source">NHK</div>
+    </div>
+    <div class="body">
+      <div class="kicker">{{ lead_article.kicker }}</div>
+      <h1>{{ lead_article.title }}</h1>
+      {% if lead_article.date %}
+      <div class="article-date">{{ lead_article.date.strftime('%Y年%m月%d日 %H時%M分') }}</div>
+      {% endif %}
+      <div class="meta">NHK News Web Easy → Original</div>
+    </div>
+  </a>
+  {% endif %}
+
+  {% if today_grid_articles %}
+  <section class="grid">
+    {% for article in today_grid_articles %}
+    <a class="card" href="{{ article.relative_path }}" target="_blank" rel="noopener">
+      <div class="photo">
+        <img src="{{ article.image_url }}"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="fallback" style="display:none">NHKの写真を読み込めませんでした</div>
+        <div class="source">NHK</div>
+      </div>
+      <div class="body">
+        <div class="kicker">{{ article.kicker }}</div>
+        <h2>{{ article.title }}</h2>
+        {% if article.date %}
+        <div class="article-date">{{ article.date.strftime('%Y年%m月%d日 %H時%M分') }}</div>
+        {% endif %}
+        <div class="meta">NHK News Web Easy → Original</div>
+      </div>
+    </a>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  {% if older_articles_grouped %}
+  <section class="older-articles">
+    <h2>Older Articles</h2>
+    {% for date_group in older_articles_grouped %}
+      <h3>{{ date_group.date_japanese }}</h3>
+      <table>
+        {% for article in date_group.articles %}
+          <tr>
+            <td><a href="{{ article.relative_path }}" target="_blank" rel="noopener">{{ article.title }}</a></td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% endfor %}
+  </section>
+  {% endif %}
+</main>
+
+<footer>
+  Stories: NHK News Web Easy, {{ current_date_iso }}。カードをクリックするとNHK Easyの記事を開きます。
+</footer>
+</body>
+</html>

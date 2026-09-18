@@ -1,0 +1,77 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>AI News Reader</title>
+    <style>
+        :root { --primary: #2563eb; --bg: #f8fafc; --sidebar: #ffffff; --sidebar-w: 420px; }
+        body { 
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif; 
+            background: var(--bg); 
+            margin: 0; 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden; 
+            -webkit-font-smoothing: antialiased;
+        }
+        #main-content { flex: 1; margin-right: var(--sidebar-w); padding: 60px; overflow-y: auto; line-height: 3; font-size: 1.8rem; }
+        .hide-furigana ruby rt { display: none !important; }
+        .sentence-wrapper { cursor: pointer; padding: 25px; border-radius: 15px; margin-bottom: 15px; border-left: 6px solid transparent; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .sentence-wrapper:hover { background: #f1f5f9; }
+        .sentence-wrapper.active { background: #dbeafe; border-left-color: var(--primary); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .compound { color: var(--primary); font-weight: 700; cursor: pointer; border-bottom: 2px solid #e2e8f0; transition: 0.2s; }
+        .compound:hover { color: #1d4ed8; border-bottom-color: var(--primary); }
+        #sidebar { position: fixed; right: 0; top: 0; width: var(--sidebar-w); height: 100vh; background: var(--sidebar); border-left: 1px solid #e2e8f0; display: flex; flex-direction: column; }
+        .panel { padding: 30px; border-bottom: 1px solid #f1f5f9; }
+        .btn-toggle { position: fixed; top: 25px; left: 25px; padding: 12px 24px; z-index: 1000; cursor: pointer; border-radius: 50px; font-weight: bold; background: white; border: 2px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); transition: 0.2s; }
+        .btn-toggle:hover { transform: translateY(-1px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
+        .vocab-card { background:#fff; padding:18px; border-radius:12px; margin-bottom:15px; border:1px solid #e2e8f0; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); }
+        .dict-tag { font-size: 0.75rem; color: #2563eb; background: #eff6ff; padding: 4px 10px; border-radius: 6px; font-weight: 800; }
+        rt { font-size: 0.55em; color: #64748b; }
+    </style>
+</head>
+<body id="reader-body" class="hide-furigana">
+    <button class="btn-toggle" onclick="toggleFurigana()" id="f-btn">Furigana: OFF</button>
+    <div id="main-content"><div class="sentence-wrapper" onclick="showAnalysis('s0', this)">の<ruby class="compound" data-r="るーる" data-m="rule" data-d="ルール" data-dr="ルール" onclick="handleVocab(event, this)">ルール<rt>るーる</rt></ruby>では、<ruby class="compound" data-r="くに" data-m="country" data-d="国" data-dr="くに" onclick="handleVocab(event, this)">国<rt>くに</rt></ruby>の<ruby class="compound" data-r="あんぜん" data-m="safety" data-d="安全" data-dr="あんぜん" onclick="handleVocab(event, this)">安全<rt>あんぜん</rt></ruby>と<ruby class="compound" data-r="せいじ" data-m="politics" data-d="政治" data-dr="せいじ" onclick="handleVocab(event, this)">政治<rt>せいじ</rt></ruby>の<ruby class="compound" data-r="どくりつ" data-m="independence" data-d="独立" data-dr="どくりつ" onclick="handleVocab(event, this)">独立<rt>どくりつ</rt></ruby>を、<ruby class="compound" data-r="ほか" data-m="another place" data-d="ほか" data-dr="ほか" onclick="handleVocab(event, this)">ほか<rt>ほか</rt></ruby>の<ruby class="compound" data-r="くに" data-m="country" data-d="国" data-dr="くに" onclick="handleVocab(event, this)">国<rt>くに</rt></ruby>が<ruby class="compound" data-r="ぐん" data-m="army" data-d="軍" data-dr="ぐん" onclick="handleVocab(event, this)">軍<rt>ぐん</rt></ruby>の<ruby class="compound" data-r="ちから" data-m="force" data-d="力" data-dr="ちから" onclick="handleVocab(event, this)">力<rt>ちから</rt></ruby>で<ruby class="compound" data-r="こうげきして" data-m="to attack (te-form)" data-d="攻撃する" data-dr="こうげきする" onclick="handleVocab(event, this)">攻撃して<rt>こうげきして</rt></ruby>は<ruby class="compound" data-r="いけ" data-m="to arrange (flowers)" data-d="いける" data-dr="いける" onclick="handleVocab(event, this)">いけ<rt>いけ</rt></ruby>ないと<ruby class="compound" data-r="なっ" data-m="to become" data-d="なる" data-dr="なる" onclick="handleVocab(event, this)">なっ<rt>なっ</rt></ruby>ています。<ruby class="compound" data-r="ちょうさ" data-m="investigation" data-d="調査" data-dr="ちょうさ" onclick="handleVocab(event, this)">調査<rt>ちょうさ</rt></ruby><ruby class="compound" data-r="ちーむ" data-m="team" data-d="チーム" data-dr="チーム" onclick="handleVocab(event, this)">チーム<rt>ちーむ</rt></ruby>は、<ruby class="compound" data-r="あめりか" data-m="(United States of) America" data-d="アメリカ" data-dr="アメリカ" onclick="handleVocab(event, this)">アメリカ<rt>あめりか</rt></ruby>と<ruby class="compound" data-r="いすらえる" data-m="Israel" data-d="イスラエル" data-dr="イスラエル" onclick="handleVocab(event, this)">イスラエル<rt>いすらえる</rt></ruby>は<ruby class="compound" data-r="るーる" data-m="rule" data-d="ルール" data-dr="ルール" onclick="handleVocab(event, this)">ルール<rt>るーる</rt></ruby>に<ruby class="compound" data-r="いはんして" data-m="to violate (te-form)" data-d="違反する" data-dr="いはんする" onclick="handleVocab(event, this)">違反して<rt>いはんして</rt></ruby><ruby class="compound" data-r="いる" data-m="to shoot (arrow, bolt, dart)" data-d="いる" data-dr="いる" onclick="handleVocab(event, this)">いる<rt>いる</rt></ruby>と<ruby class="compound" data-r="つよく" data-m="strong" data-d="強い" data-dr="つよい" onclick="handleVocab(event, this)">強く<rt>つよく</rt></ruby><ruby class="compound" data-r="いいました" data-m="said (past polite form)" data-d="言う" data-dr="いう" onclick="handleVocab(event, this)">言いました<rt>いいました</rt></ruby>。</div>
+<div class="sentence-wrapper" onclick="showAnalysis('s1', this)"><ruby class="compound" data-r="そして" data-m="and" data-d="そして" data-dr="そして" onclick="handleVocab(event, this)">そして<rt>そして</rt></ruby>、<ruby class="compound" data-r="いらん" data-m="Iran" data-d="イラン" data-dr="イラン" onclick="handleVocab(event, this)">イラン<rt>いらん</rt></ruby>の<ruby class="compound" data-r="しょうがっこう" data-m="primary school" data-d="小学校" data-dr="しょうがっこう" onclick="handleVocab(event, this)">小学校<rt>しょうがっこう</rt></ruby>で<ruby class="compound" data-r="たくさん" data-m="a lot" data-d="たくさん" data-dr="たくさん" onclick="handleVocab(event, this)">たくさん<rt>たくさん</rt></ruby>の<ruby class="compound" data-r="こどもたち" data-m="children" data-d="子どもたち" data-dr="こどもたち" onclick="handleVocab(event, this)">子どもたち<rt>こどもたち</rt></ruby>が<ruby class="compound" data-r="こうげき" data-m="attack" data-d="攻撃" data-dr="こうげき" onclick="handleVocab(event, this)">攻撃<rt>こうげき</rt></ruby>で<ruby class="compound" data-r="nakunatta" data-m="died (euphemistic past tense)" data-d="亡くなる" data-dr="なくなる" onclick="handleVocab(event, this)">亡くなった<rt>nakunatta</rt></ruby>と<ruby class="compound" data-r="いう" data-m="to do up (hair)" data-d="いう" data-dr="ゆう" onclick="handleVocab(event, this)">いう<rt>いう</rt></ruby><ruby class="compound" data-r="にゅーす" data-m="news" data-d="ニュース" data-dr="ニュース" onclick="handleVocab(event, this)">ニュース<rt>にゅーす</rt></ruby>に、<ruby class="compound" data-r="しょっく" data-m="shock (emotional)" data-d="ショック" data-dr="ショック" onclick="handleVocab(event, this)">ショック<rt>しょっく</rt></ruby>を<ruby class="compound" data-r="uketeiru" data-m="is receiving; is experiencing (e.g., shock); is shocked" data-d="受ける" data-dr="うける" onclick="handleVocab(event, this)">受けている<rt>uketeiru</rt></ruby>と<ruby class="compound" data-r="happyō shimashita" data-m="announced (past polite)" data-d="発表する" data-dr="はっぴょうする" onclick="handleVocab(event, this)">発表しました<rt>happyō shimashita</rt></ruby>。</div>
+<div class="sentence-wrapper" onclick="showAnalysis('s2', this)"><ruby class="compound" data-r="ちょうさちーむ" data-m="investigation team" data-d="調査チーム" data-dr="ちょうさチーム" onclick="handleVocab(event, this)">調査チーム<rt>ちょうさちーむ</rt></ruby>は「<ruby class="compound" data-r="いらん" data-m="Iran" data-d="イラン" data-dr="イラン" onclick="handleVocab(event, this)">イラン<rt>いらん</rt></ruby>の<ruby class="compound" data-r="こうげき" data-m="attack" data-d="攻撃" data-dr="こうげき" onclick="handleVocab(event, this)">攻撃<rt>こうげき</rt></ruby>で、<ruby class="compound" data-r="まわり" data-m="circumference" data-d="周り" data-dr="まわり" onclick="handleVocab(event, this)">周り<rt>まわり</rt></ruby>の<ruby class="compound" data-r="くに" data-m="country" data-d="国" data-dr="くに" onclick="handleVocab(event, this)">国<rt>くに</rt></ruby>で<ruby class="compound" data-r="なくなった" data-m="died (past tense)" data-d="亡くなる" data-dr="なくなる" onclick="handleVocab(event, this)">亡くなった<rt>なくなった</rt></ruby><ruby class="compound" data-r="ひと" data-m="-ian (e.g. Italian)" data-d="人" data-dr="じん" onclick="handleVocab(event, this)">人<rt>ひと</rt></ruby>が<ruby class="compound" data-r="でています" data-m="are appearing; have emerged (as casualties)" data-d="出る" data-dr="でる" onclick="handleVocab(event, this)">出ています<rt>でています</rt></ruby>。<ruby class="compound" data-r="あめりか" data-m="(United States of) America" data-d="アメリカ" data-dr="アメリカ" onclick="handleVocab(event, this)">アメリカ<rt>あめりか</rt></ruby>と<ruby class="compound" data-r="いすらえる" data-m="Israel" data-d="イスラエル" data-dr="イスラエル" onclick="handleVocab(event, this)">イスラエル<rt>いすらえる</rt></ruby>、<ruby class="compound" data-r="そして" data-m="and" data-d="そして" data-dr="そして" onclick="handleVocab(event, this)">そして<rt>そして</rt></ruby><ruby class="compound" data-r="いらん" data-m="Iran" data-d="イラン" data-dr="イラン" onclick="handleVocab(event, this)">イラン<rt>いらん</rt></ruby>は、<ruby class="compound" data-r="すぐに" data-m="immediately, at once" data-d="すぐに" data-dr="すぐに" onclick="handleVocab(event, this)">すぐに<rt>すぐに</rt></ruby><ruby class="compound" data-r="こうげき" data-m="attack" data-d="攻撃" data-dr="こうげき" onclick="handleVocab(event, this)">攻撃<rt>こうげき</rt></ruby>を<ruby class="compound" data-r="やめなさい" data-m="(please) stop (command form)" data-d="やめる" data-dr="やめる" onclick="handleVocab(event, this)">やめなさい<rt>やめなさい</rt></ruby>」と<ruby class="compound" data-r="いいました" data-m="said (past tense of 言う)" data-d="言う" data-dr="いう" onclick="handleVocab(event, this)">言いました<rt>いいました</rt></ruby>。</div>
+</div>
+    <div id="sidebar">
+        <div class="panel"><h3>Translation</h3><div id="analysis-content" style="color:#475569; line-height:1.6;">Select a sentence to begin...</div></div>
+        <div class="panel"><h3>Vocab Collected <span id="badge" style="background:var(--primary); color:white; padding:2px 10px; border-radius:20px; font-size:0.85rem; margin-left:8px;">0</span></h3></div>
+        <div id="list-items" style="flex:1; padding:25px; overflow-y:auto; background:#fcfcfc;"></div>
+    </div>
+    <script>
+        const translations = {"s0": "According to the rules, other countries must not attack the safety and political independence of a nation with military force. The investigation team strongly stated that America and Israel are violating the rules.", "s1": "And, he announced that he was shocked by the news that many children died in an attack at an elementary school in Iran.", "s2": "The investigation team said, \"Due to Iran's attacks, people have died in neighboring countries. America, Israel, and Iran, stop your attacks immediately.\""};
+        const vocabRegistry = new Map();
+        function toggleFurigana() { 
+            const isHidden = document.getElementById('reader-body').classList.toggle('hide-furigana');
+            document.getElementById('f-btn').innerText = isHidden ? "Furigana: OFF" : "Furigana: ON";
+        }
+        function showAnalysis(id, el) {
+            document.querySelectorAll('.sentence-wrapper').forEach(s => s.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById('analysis-content').innerText = translations[id];
+        }
+        function handleVocab(event, el) {
+            event.stopPropagation();
+            const word = el.childNodes[0].textContent.trim();
+            if (vocabRegistry.has(word)) return;
+            vocabRegistry.set(word, true);
+            const card = document.createElement('div');
+            card.className = "vocab-card";
+            card.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <strong style="font-size:1.1rem; color:#1e293b;">${word}</strong> 
+                    <span class="dict-tag">${el.dataset.d}</span>
+                </div>
+                <div style="color:#64748b; font-size:0.85rem; margin-top:2px;">(${el.dataset.dr})</div>
+                <div style="margin-top:10px; color:#334155; line-height:1.4;">${el.dataset.m}</div>
+            `;
+            document.getElementById('list-items').prepend(card);
+            document.getElementById('badge').innerText = vocabRegistry.size;
+        }
+    </script>
+</body>
+</html>

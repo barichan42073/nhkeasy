@@ -1,0 +1,153 @@
+:root { --nhk-blue: #004098; --bg: #f3f7f9; --sidebar-w: 420px; --text-main: #333333; }
+
+body {
+    font-family: "Noto Sans CJK JP", sans-serif;
+    background: var(--bg);
+    margin: 0;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#main-content {
+    flex: 1;
+    padding: 40px 60px;
+    overflow-y: auto;
+    background: white;
+    box-sizing: border-box;
+}
+
+
+.article-inner { width: 100%; max-width: 750px; }
+
+.article-title {
+    font-size: 1.8rem;
+    font-weight: 800;
+    line-height: 1.6;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 15px;
+}
+
+.article-body-text {
+    line-height: 3.2;
+    font-size: 1.5rem;
+    color: var(--text-main);
+    margin-bottom: 2.2em;
+}
+
+/* NEW SECTION */
+
+.article-title,
+.article-body-text {
+    transition: background-color 0.15s, box-shadow 0.15s;
+    border-radius: 10px;
+}
+
+.article-title:hover,
+.article-body-text:hover {
+    background-color: #f8fbff;
+}
+
+.sentence-active {
+    background-color: #E6F7FF;
+}
+
+ruby { ruby-position: over; ruby-align: center; }
+rt { font-size: 0.55em; color: #777; visibility: visible; }
+
+.mode-none rt { visibility: hidden; }
+.mode-hard rt { visibility: hidden; }
+.mode-hard .n1 rt,
+.mode-hard .n2 rt { visibility: visible; }
+
+.word-token {
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.word-token:hover {
+    background-color: #f0f7ff;
+    color: var(--nhk-blue);
+}
+
+.word-active {
+    background-color: #fff3cd;
+    border-radius: 4px;
+}
+
+.controls {
+    position: fixed;
+    bottom: 30px;
+    left: 40%;
+    transform: translateX(-50%);
+    background: white;
+    padding: 8px;
+    border-radius: 50px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.1);
+    display: flex;
+    gap: 8px;
+    z-index: 100;
+}
+
+button {
+    border: none;
+    padding: 10px 24px;
+    border-radius: 20px;
+    cursor: pointer;
+    background: #f1f5f9;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+button.active {
+    background: var(--nhk-blue);
+    color: white;
+}
+
+.translation-container {
+    margin-top: 80px;
+    padding-top: 40px;
+    border-top: 5px solid var(--bg);
+}
+
+.translation-container h3 {
+    color: var(--nhk-blue);
+    margin-bottom: 30px;
+    font-size: 1.6rem;
+}
+
+.translation-pair {
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.ja-orig {
+    font-size: 0.9rem;
+    color: #888;
+    margin-bottom: 8px;
+    font-style: italic;
+}
+
+.en-trans {
+    font-size: 1.2rem;
+    color: #222;
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+.sidebar {
+    width: var(--sidebar-w);
+    min-width: var(--sidebar-w);
+    padding: 30px;
+    background: #ffffff;
+    border-left: 1px solid #e2e8f0;
+    overflow-y: auto;
+}
+
+.sidebar-card {
+    background: #f8fafc;
+    padding: 25px;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+}

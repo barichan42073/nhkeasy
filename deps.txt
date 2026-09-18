@@ -1,0 +1,487 @@
+{
+    "anki_generator": {
+        "bacon": 2,
+        "imported_by": [
+            "anki_pipeline"
+        ],
+        "imports": [
+            "requests",
+            "utils"
+        ],
+        "name": "anki_generator",
+        "path": "/home/nev/smartreader/anki_generator.py"
+    },
+    "anki_pipeline": {
+        "bacon": 1,
+        "imported_by": [
+            "pipeline.py"
+        ],
+        "imports": [
+            "anki_generator",
+            "article_manager",
+            "config",
+            "my_anki",
+            "my_anki.anki_sync_lib",
+            "requests",
+            "utils",
+            "vocab_extractor"
+        ],
+        "name": "anki_pipeline",
+        "path": "/home/nev/smartreader/anki_pipeline.py"
+    },
+    "article_manager": {
+        "bacon": 1,
+        "imported_by": [
+            "anki_pipeline",
+            "pipeline.py"
+        ],
+        "name": "article_manager",
+        "path": "/home/nev/smartreader/article_manager.py"
+    },
+    "article_schema": {
+        "bacon": 1,
+        "imported_by": [
+            "html_pipeline",
+            "nhkeasier_to_epub",
+            "pipeline.py",
+            "web_builder"
+        ],
+        "imports": [
+            "pydantic"
+        ],
+        "name": "article_schema",
+        "path": "/home/nev/smartreader/article_schema.py"
+    },
+    "audio_pipeline": {
+        "bacon": 1,
+        "imported_by": [
+            "html_pipeline",
+            "pipeline.py"
+        ],
+        "imports": [
+            "config",
+            "pydub",
+            "pydub.exceptions",
+            "requests",
+            "send_to_kindle",
+            "utils"
+        ],
+        "name": "audio_pipeline",
+        "path": "/home/nev/smartreader/audio_pipeline.py"
+    },
+    "bs4": {
+        "bacon": 2,
+        "imported_by": [
+            "bs4",
+            "fetch_rss",
+            "html_pipeline",
+            "nhkeasier_to_epub",
+            "utils",
+            "web_builder"
+        ],
+        "imports": [
+            "bs4"
+        ],
+        "name": "bs4",
+        "path": "/home/nev/smartreader/.venv/lib/python3.12/site-packages/bs4/__init__.py"
+    },
+    "config": {
+        "bacon": 1,
+        "imported_by": [
+            "anki_pipeline",
+            "audio_pipeline",
+            "html_pipeline",
+            "pipeline.py"
+        ],
+        "name": "config",
+        "path": "/home/nev/smartreader/config.py"
+    },
+    "dateutil": {
+        "bacon": 2,
+        "imported_by": [
+            "fetch_rss"
+        ],
+        "name": "dateutil",
+        "path": "/home/nev/smartreader/.venv/lib/python3.12/site-packages/dateutil/__init__.py"
+    },
+    "dateutil.parser": {
+        "bacon": 2,
+        "imported_by": [
+            "fetch_rss"
+        ],
+        "name": "dateutil.parser",
+        "path": "/home/nev/smartreader/.venv/lib/python3.12/site-packages/dateutil/parser/__init__.py"
+    },
+    "dotenv": {
+        "bacon": 2,
+        "imported_by": [
+            "geminimodels",
+            "nhkeasier_to_epub",
+            "send_to_kindle"
+        ],
+        "name": "dotenv",
+        "path": "/home/nev/smartreader/.venv/lib/python3.12/site-packages/dotenv/__init__.py"
+    },
+    "ebooklib": {
+        "bacon": 2,
+        "imported_by": [
+            "ebooklib.epub",
+            "make_ebook"
+        ],
+        "name": "ebooklib",
+        "path": "/home/nev/smartreader/.venv/lib/python3.12/site-packages/ebooklib/__init__.py"
+    },
+    "ebooklib.epub": {
+        "bacon": 2,
+        "imported_by": [
+            "make_ebook"
+        ],
+        "imports": [
+            "ebooklib"
+        ],
+        "name": "ebooklib.epub",
+        "path": "/home/nev/smartreader/.venv/lib/python3.12/site-packages/ebooklib/epub.py"
+    },
+    "feedparser": {
+        "bacon": 2,
+        "imported_by": [
+            "fetch_rss"
+        ],
+        "name": "feedparser",
+        "path": "/home/nev/smartreader/.venv/lib/python3.12/site-packages/feedparser/__init__.py"
+    },
+    "fetch_rss": {
+        "bacon": 1,
+        "imported_by": [
+            "pipeline.py"
+        ],
+        "imports": [
+            "bs4",
+            "dateutil",
+            "dateutil.parser",
+            "feedparser"
+        ],
+        "name": "fetch_rss",
+        "path": "/home/nev/smartreader/fetch_rss.py"
+    },
+    "geminimodels": {
+        "bacon": 1,
+        "imported_by": [
+            "pipeline.py"
+        ],
+        "imports": [
+            "dotenv",
+            "google",
+            "google.genai",
+            "google.genai.types"
+        ],
+        "name": "geminimodels",
+        "path": "/home/nev/smartreader/geminimodels.py"
+    },
+    "geminitranslation": {
+        "bacon": 1,
+        "imported_by": [
+            "make_ebook",
+            "pipeline.py"
+        ],
+        "imports": [
+            "google",
+            "google.genai",
+            "google.genai.types",
+            "pydantic"
+        ],
+        "name": "geminitranslation",
+        "path": "/home/nev/smartreader/geminitranslation.py"
+    },
+    "google": {
+        "bacon": 2,
+        "imported_by": [
+            "geminimodels",
+            "geminitranslation",
+            "google.api_core",
+            "google.api_core.exceptions",
+            "google.genai",
+            "google.genai.types",
+            "html_pipeline",
+            "nhkeasier_to_epub"
+        ],
+        "name": "google",
+        "path": null
+    },
+    "google.api_core": {
+        "bacon": 2,
+        "imported_by": [
+            "google.api_core",
+            "html_pipeline"
+        ],
+        "imports": [
+            "google",
+            "google.api_core"
+        ],
+        "name": "google.api_core",
+        "path": "/home/nev/smartreader/.venv/lib/python3.12/site-packages/google/api_core/__init__.py"
+    },
+    "google.api_core.exceptions": {
+        "bacon": 2,
+        "imported_by": [
+            "html_pipeline"
+        ],
+        "imports": [
+            "google"
+        ],
+        "name": "google.api_core.exceptions",
+        "path": "/home/nev/smartreader/.venv/lib/python3.12/site-packages/google/api_core/exceptions.py"
+    },
+    "google.genai": {
+        "bacon": 2,
+        "imported_by": [
+            "geminimodels",
+            "geminitranslation",
+            "google.genai",
+            "google.genai.types",
+            "nhkeasier_to_epub"
+        ],
+        "imports": [
+            "google",
+            "google.genai",
+            "google.genai.types"
+        ],
+        "name": "google.genai",
+        "path": "/home/nev/smartreader/.venv/lib/python3.12/site-packages/google/genai/__init__.py"
+    },
+    "google.genai.types": {
+        "bacon": 2,
+        "imported_by": [
+            "geminimodels",
+            "geminitranslation",
+            "google.genai"
+        ],
+        "imports": [
+            "google",
+            "google.genai",
+            "httpx",
+            "pydantic"
+        ],
+        "name": "google.genai.types",
+        "path": "/home/nev/smartreader/.venv/lib/python3.12/site-packages/google/genai/types.py"
+    },
+    "html_pipeline": {
+        "bacon": 1,
+        "imported_by": [
+            "pipeline.py"
+        ],
+        "imports": [
+            "article_schema",
+            "audio_pipeline",
+            "bs4",
+            "config",
+            "google",
+            "google.api_core",
+            "google.api_core.exceptions",
+            "jinja_render",
+            "utils",
+            "web_builder"
+        ],
+        "name": "html_pipeline",
+        "path": "/home/nev/smartreader/html_pipeline.py"
+    },
+    "httpx": {
+        "bacon": 2,
+        "imported_by": [
+            "google.genai.types",
+            "nhkeasier_to_epub"
+        ],
+        "name": "httpx",
+        "path": "/home/nev/smartreader/.venv/lib/python3.12/site-packages/httpx/__init__.py"
+    },
+    "jinja_render": {
+        "bacon": 2,
+        "imported_by": [
+            "html_pipeline"
+        ],
+        "name": "jinja_render",
+        "path": "/home/nev/smartreader/jinja_render.py"
+    },
+    "make_ebook": {
+        "bacon": 1,
+        "imported_by": [
+            "pipeline.py"
+        ],
+        "imports": [
+            "ebooklib",
+            "ebooklib.epub",
+            "geminitranslation"
+        ],
+        "name": "make_ebook",
+        "path": "/home/nev/smartreader/make_ebook.py"
+    },
+    "my_anki": {
+        "bacon": 2,
+        "imported_by": [
+            "anki_pipeline"
+        ],
+        "name": "my_anki",
+        "path": null
+    },
+    "my_anki.anki_sync_lib": {
+        "bacon": 2,
+        "imported_by": [
+            "anki_pipeline"
+        ],
+        "name": "my_anki.anki_sync_lib",
+        "path": "/home/nev/pylibs/my_anki/anki_sync_lib.py"
+    },
+    "nhkeasier_to_epub": {
+        "bacon": 1,
+        "imported_by": [
+            "pipeline.py"
+        ],
+        "imports": [
+            "article_schema",
+            "bs4",
+            "dotenv",
+            "google",
+            "google.genai",
+            "httpx",
+            "playwright",
+            "playwright.async_api"
+        ],
+        "name": "nhkeasier_to_epub",
+        "path": "/home/nev/smartreader/nhkeasier_to_epub.py"
+    },
+    "pipeline.py": {
+        "bacon": 0,
+        "imports": [
+            "anki_pipeline",
+            "article_manager",
+            "article_schema",
+            "audio_pipeline",
+            "config",
+            "fetch_rss",
+            "geminimodels",
+            "geminitranslation",
+            "html_pipeline",
+            "make_ebook",
+            "nhkeasier_to_epub",
+            "send_to_kindle",
+            "utils"
+        ],
+        "name": "pipeline.py",
+        "path": null
+    },
+    "playwright": {
+        "bacon": 2,
+        "imported_by": [
+            "nhkeasier_to_epub",
+            "playwright.async_api"
+        ],
+        "name": "playwright",
+        "path": "/home/nev/smartreader/.venv/lib/python3.12/site-packages/playwright/__init__.py"
+    },
+    "playwright.async_api": {
+        "bacon": 2,
+        "imported_by": [
+            "nhkeasier_to_epub",
+            "playwright.async_api"
+        ],
+        "imports": [
+            "playwright",
+            "playwright.async_api"
+        ],
+        "name": "playwright.async_api",
+        "path": "/home/nev/smartreader/.venv/lib/python3.12/site-packages/playwright/async_api/__init__.py"
+    },
+    "pydantic": {
+        "bacon": 2,
+        "imported_by": [
+            "article_schema",
+            "geminitranslation",
+            "google.genai.types",
+            "pydantic"
+        ],
+        "imports": [
+            "pydantic"
+        ],
+        "name": "pydantic",
+        "path": "/home/nev/smartreader/.venv/lib/python3.12/site-packages/pydantic/__init__.py"
+    },
+    "pydub": {
+        "bacon": 2,
+        "imported_by": [
+            "audio_pipeline"
+        ],
+        "name": "pydub",
+        "path": "/home/nev/smartreader/.venv/lib/python3.12/site-packages/pydub/__init__.py"
+    },
+    "pydub.exceptions": {
+        "bacon": 2,
+        "imported_by": [
+            "audio_pipeline"
+        ],
+        "name": "pydub.exceptions",
+        "path": "/home/nev/smartreader/.venv/lib/python3.12/site-packages/pydub/exceptions.py"
+    },
+    "requests": {
+        "bacon": 2,
+        "imported_by": [
+            "anki_generator",
+            "anki_pipeline",
+            "audio_pipeline",
+            "requests",
+            "utils"
+        ],
+        "imports": [
+            "requests"
+        ],
+        "name": "requests",
+        "path": "/home/nev/smartreader/.venv/lib/python3.12/site-packages/requests/__init__.py"
+    },
+    "send_to_kindle": {
+        "bacon": 1,
+        "imported_by": [
+            "audio_pipeline",
+            "pipeline.py"
+        ],
+        "imports": [
+            "dotenv"
+        ],
+        "name": "send_to_kindle",
+        "path": "/home/nev/smartreader/send_to_kindle.py"
+    },
+    "utils": {
+        "bacon": 1,
+        "imported_by": [
+            "anki_generator",
+            "anki_pipeline",
+            "audio_pipeline",
+            "html_pipeline",
+            "pipeline.py"
+        ],
+        "imports": [
+            "bs4",
+            "requests"
+        ],
+        "name": "utils",
+        "path": "/home/nev/smartreader/utils.py"
+    },
+    "vocab_extractor": {
+        "bacon": 2,
+        "imported_by": [
+            "anki_pipeline"
+        ],
+        "name": "vocab_extractor",
+        "path": "/home/nev/smartreader/vocab_extractor.py"
+    },
+    "web_builder": {
+        "bacon": 2,
+        "imported_by": [
+            "html_pipeline"
+        ],
+        "imports": [
+            "article_schema",
+            "bs4"
+        ],
+        "name": "web_builder",
+        "path": "/home/nev/smartreader/web_builder.py"
+    }
+}
