@@ -96,9 +96,15 @@ def build_unique_vocab_updates(
 ) -> list[dict[str, str]]:
     """
     Pure transform converting the daily vocab payload shape into the shape
-    expected by article_manager.update_unique_vocab.
+    expected by article_manager.update_unique_vocab (word/reading/definition/
+    jlpt_level keys).
     """
     return [
-        {"kanji": v["word"], "hiragana": v["reading"], "meaning": v["definition"]}
+        {
+            "word": v["word"],
+            "reading": v.get("reading", ""),
+            "definition": v.get("definition", ""),
+            "jlpt_level": v.get("jlpt_level", ""),
+        }
         for v in unique_daily_vocab
     ]
