@@ -269,11 +269,12 @@ def test_deliver_combined_audio_success():
     combined_audio_path = Path("/tmp/combined.mp3")
 
     with patch.object(
-        audio_runner.send_to_kindle, "send_epub_to_kindle", return_value=True
-    ) as mock_send:
+        audio_runner, "send_to_kindle", new_callable=MagicMock
+    ) as mock_send_to_kindle:
+        mock_send_to_kindle.send_epub_to_kindle.return_value = True
         asyncio.run(audio_runner.deliver_combined_audio(combined_audio_path))
 
-    mock_send.assert_called_once_with(
+    mock_send_to_kindle.send_epub_to_kindle.assert_called_once_with(
         combined_audio_path, kindle_email="barichan42073@gmail.com"
     )
 
@@ -282,17 +283,36 @@ def test_deliver_combined_audio_failure_does_not_raise():
     combined_audio_path = Path("/tmp/combined.mp3")
 
     with patch.object(
-        audio_runner.send_to_kindle, "send_epub_to_kindle", return_value=False
-    ):
+        audio_runner, "send_to_kindle", new_callable=MagicMock
+    ) as mock_send_to_kindle:
+        mock_send_to_kindle.send_epub_to_kindle.return_value = False
         asyncio.run(audio_runner.deliver_combined_audio(combined_audio_path))
+
+    mock_send_to_kindle.send_epub_to_kindle.assert_called_once()
 
 
 def test_deliver_combined_audio_swallows_exceptions():
     combined_audio_path = Path("/tmp/combined.mp3")
 
     with patch.object(
+        audio_runner, "send_to_kindle", new_callable=MagicMock
+    ) as mock_send_to_kindle:
+        mock_send_to_kindle.send_epub_to_kindle.side_effect = OSError("smtp down")
+        asyncio.run(audio_runner.deliver_combined_audio(combined_audio_path))
+
+    mock_send_to_kindle.send_epub_to_kindle.assert_called_once()
+
+
+def test_deliver_combined_audio_no_send_to_kindle_module(caplog):
+    combined_audio_path = Path("/tmp/combined.mp3")
+    caplog.set_level(audio_runner.logging.ERROR)
+
+    with patch.object(audio_runner, "send_to_kindle", None), patch.object(
         audio_runner.send_to_kindle,
         "send_epub_to_kindle",
-        side_effect=OSError("smtp down"),
-    ):
+        new_callable=MagicMock,
+    ) as mock_send_epub_to_kindle:
         asyncio.run(audio_runner.deliver_combined_audio(combined_audio_path))
+
+    assert "send_to_kindle module is not available" in caplog.text
+    mock_send_epub_to_kindle.assert_not_called()
