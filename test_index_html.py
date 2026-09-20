@@ -37,9 +37,6 @@ class TestComputeIndexRenderData(unittest.TestCase):
                 "kicker": "Kicker 2",
             },
         ]
-        # Add date_obj to base articles for easier date comparisons in tests
-        for article in self.articles_from_current_run_base:
-            article["date_obj"] = datetime.fromisoformat(article["date"])
 
     def test_compute_index_render_data_basic_merge_and_sort(self):
         """
