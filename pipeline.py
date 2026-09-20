@@ -6,15 +6,15 @@ from pathlib import Path
 
 # local imports
 import anki_runner
+import article_fetch_runner
 import article_manager
 import audio_runner
+import analysis_runner
+import epub_runner
 import fetch_rss
 import html_runner
-import nhkeasier_to_epub
-import send_to_kindle
-from article_schema import ArticleAnalysis
+import send_to_kindle  # noqa: F401  (kept for backward-compat import side effects)
 from config import PipelineConfig, parse_arguments
-from geminimodels import GeminiModels
 from utils import sanitize_filename
 
 logger = logging.getLogger(__name__)
@@ -48,132 +48,6 @@ def _ensure_valid_unique_vocab_json(path: Path):
             e,
         )
         path.write_text("{}", encoding="utf-8")
-
-
-async def analyze_article_with_gemini(raw_article_text: str) -> ArticleAnalysis:
-    """
-    Calls the Gemini API using the defined Structured Output schema to generate a structured analysis.
-    Uses GeminiModels to get the model.
-    """
-    model = GeminiModels.get_model(
-        system_instruction=(
-            "You are an expert Japanese translator and language analyst specializing in NHK Easy News. "
-            "Analyze the provided text and strictly output JSON conforming to the requested schema. "
-            "IMPORTANT: Output MUST be valid JSON, containing NO Markdown code block wrapping (e.g., ```json)."
-        ),
-        response_schema=ArticleAnalysis,
-    )
-
-    prompt = (
-        "Perform a complete structural analysis of the following NHK Easy News article.\n"
-        "1. Reconstruct full article HTML structure.\n"
-        "2. Break down every sentence with hiragana readings, English translations, and precise word mappings.\n"
-        "3. Provide a side vocabulary table.\n\n"
-        f"Article Text:\n{raw_article_text}"
-    )
-
-    response = await model.generate_content_async(prompt)
-    logger.debug("Raw Response Text from Gemini:\n%s", response.text)
-
-    analysis = ArticleAnalysis.model_validate_json(response.text)
-    return analysis
-
-
-async def _fetch_and_stage_article_html(
-    article: dict, config: PipelineConfig
-) -> tuple[str | None, str | None]:
-    """Fetches raw HTML for an article and saves it locally."""
-    article_id = article.get("id", article["link"])
-    article_title = article.get("title", "Untitled Article")
-    logger.info("Fetching lightweight HTML from %s via httpx...", article["link"])
-
-    raw_html_content = await nhkeasier_to_epub.fetch_article_html(
-        article["link"]
-    )
-    if not raw_html_content:
-        logger.warning(
-            "Failed to fetch HTML content for '%s'. Skipping article.",
-            article_title,
-        )
-        return None, None
-
-    (
-        _article_title_from_html,
-        article_text_for_gemini,
-        extracted_image_url_from_html,
-    ) = nhkeasier_to_epub.extract_article_content_from_html(
-        raw_html_content, base_url=article["link"]
-    )
-
-    if extracted_image_url_from_html and not article.get("image_url"):
-        article["image_url"] = extracted_image_url_from_html
-
-    staged_text_filename = (
-        f"{sanitize_filename(article_title)}_{sanitize_filename(article_id)}.txt"
-    )
-    staged_text_path = config.smartreader_dir / staged_text_filename
-    try:
-        staged_text_path.write_text(article_text_for_gemini, encoding="utf-8")
-        logger.debug(
-            "Saved exact text payload sent to Gemini -> '%s'",
-            staged_text_filename,
-        )
-    except OSError:
-        logger.exception("Failed to save staged text file to %s", staged_text_path)
-
-    return raw_html_content, article_text_for_gemini
-
-
-async def _process_epub_and_kindle(
-    article: dict,
-    config: PipelineConfig,
-    raw_html_content: str,
-    analysis: ArticleAnalysis,
-    newly_processed_article_ids: set[str],
-    kindle_sent_count: list[int],
-) -> tuple[Path | None, str | None]:
-    """Generates EPUB, sends to Kindle if configured, and returns article markdown content."""
-    article_id = article.get("id", article["link"])
-    article_title = article.get("title", "Untitled Article")
-
-    epub_filename = (
-        f"{sanitize_filename(article_title)}_{sanitize_filename(article_id)}.epub"
-    )
-    output_epub_path = config.epubs_dir / epub_filename
-
-    epub_generated_path, article_markdown_content = (
-        await nhkeasier_to_epub.process_article_to_epub(
-            article_url=article["link"],
-            html_content=raw_html_content,
-            output_path=output_epub_path,
-            keep_md=config.keep_md,
-            model_name=config.model_name,
-            article_title_for_metadata=article_title,
-            analysis=analysis,
-        )
-    )
-
-    if epub_generated_path and epub_generated_path.exists():
-        newly_processed_article_ids.add(article_id)
-
-        if config.send_to_kindle and not config.no_kindle:
-            logger.info("Sending '%s' to Kindle...", article_title)
-
-            success = send_to_kindle.send_epub_to_kindle(epub_generated_path)
-            if success:
-                logger.info(
-                    "Successfully sent '%s' to Kindle.", article_title
-                )
-                kindle_sent_count[0] += 1
-            else:
-                logger.error("Failed to send '%s' to Kindle.", article_title)
-    else:
-        logger.error(
-            "EPUB processing failed for '%s'. File not created.",
-            article_title,
-        )
-
-    return epub_generated_path, article_markdown_content
 
 
 def _load_and_filter_articles(
@@ -231,7 +105,7 @@ async def _process_single_article(
     )
 
     raw_html_content, article_text_for_gemini = (
-        await _fetch_and_stage_article_html(article, config)
+        await article_fetch_runner.fetch_and_stage_article_html(article, config)
     )
 
     if not raw_html_content or not article_text_for_gemini:
@@ -240,33 +114,14 @@ async def _process_single_article(
     analysis_json_filename = f"{sanitize_filename(article_title)}_{sanitize_filename(article_id)}_analysis.json"
     analysis_json_path = config.smartreader_dir / analysis_json_filename
 
-    analysis: ArticleAnalysis
-    if config.use_staged_analysis and analysis_json_path.exists():
-        logger.info(
-            "Using existing staged ArticleAnalysis JSON for '%s' from %s",
-            article_title,
-            analysis_json_path.name,
-        )
-        analysis = ArticleAnalysis.model_validate_json(
-            analysis_json_path.read_text(encoding="utf-8")
-        )
-    else:
-        logger.info("Analyzing article text with Gemini for '%s'...", article_title)
-        analysis = await analyze_article_with_gemini(article_text_for_gemini)
-        try:
-            analysis_json_path.write_text(
-                analysis.model_dump_json(indent=2), encoding="utf-8"
-            )
-            logger.debug(
-                "Saved ArticleAnalysis to %s",
-                analysis_json_path,
-            )
-        except OSError:
-            logger.exception(
-                "Failed to save ArticleAnalysis to %s", analysis_json_path
-            )
+    analysis = await analysis_runner.get_article_analysis(
+        article_text_for_gemini,
+        analysis_json_path,
+        config.use_staged_analysis,
+        article_title,
+    )
 
-    _epub_path, article_markdown_content = await _process_epub_and_kindle(
+    _epub_path, article_markdown_content = await epub_runner.process_epub_and_kindle(
         article,
         config,
         raw_html_content,
