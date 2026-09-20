@@ -27,40 +27,42 @@ def test_connection():
         response.raise_for_status() # Raises HTTPError for bad responses (4xx or 5xx)
         result = response.json()
 
-        if result.get('error'):
-            logger.error(f"AnkiConnect returned an error: {result['error']}")
-            return False
+        assert not result.get('error'), f"AnkiConnect returned an error: {result['error']}"
+        
+        deck_names = result.get('result')
+        logger.info(f"Successfully connected to AnkiConnect!")
+        if deck_names:
+            logger.info(f"Found decks: {', '.join(deck_names)}")
         else:
-            deck_names = result.get('result')
-            logger.info(f"Successfully connected to AnkiConnect!")
-            if deck_names:
-                logger.info(f"Found decks: {', '.join(deck_names)}")
-            else:
-                logger.info("No decks found in Anki.")
-            return True
+            logger.info("No decks found in Anki.")
 
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"Connection refused. Is Anki running and AnkiConnect installed/enabled? (Error: {e})")
+        assert False, f"Connection refused: {e}"
+    except requests.exceptions.Timeout as e:
+        logger.error(f"AnkiConnect connection timed out at {anki_connect_url}. (Error: {e})")
+        assert False, f"Connection timed out: {e}"
+    except requests.exceptions.HTTPError as e:
+        logger.error(f"AnkiConnect returned an HTTP error: {e.response.status_code} - {e.response.reason}. (Error: {e})")
+        assert False, f"HTTP error: {e}"
     except RequestException as e:
-        # Catch requests-specific exceptions, including connection errors, timeouts, and HTTP errors
-        if isinstance(e, requests.exceptions.ConnectionError):
-            logger.error(f"Connection refused. Is Anki running and AnkiConnect installed/enabled? (Error: {e})")
-        elif isinstance(e, requests.exceptions.Timeout):
-            logger.error(f"AnkiConnect connection timed out at {anki_connect_url}. (Error: {e})")
-        elif isinstance(e, requests.exceptions.HTTPError):
-            logger.error(f"AnkiConnect returned an HTTP error: {e.response.status_code} - {e.response.reason}. (Error: {e})")
-        else:
-            logger.error(f"Could not connect to AnkiConnect. Is Anki running and AnkiConnect installed? (Error: {e})")
-        return False
+        logger.error(f"Could not connect to AnkiConnect. Is Anki running and AnkiConnect installed? (Error: {e})")
+        assert False, f"Request exception: {e}"
     except json.JSONDecodeError as e:
         logger.error(f"Failed to decode JSON response from AnkiConnect. Is AnkiConnect returning valid JSON? (Error: {e})")
-        return False
+        assert False, f"JSON decode error: {e}"
     except Exception as e:
         logger.error(f"An unexpected error occurred: {e}", exc_info=True)
-        return False
+        assert False, f"Unexpected error: {e}"
 
 if __name__ == "__main__":
-    if test_connection():
+    try:
+        test_connection()
         logger.info("AnkiConnect connection test successful!")
         sys.exit(0)
-    else:
-        logger.error("AnkiConnect connection test failed.")
+    except AssertionError as e:
+        logger.error(f"AnkiConnect connection test failed: {e}")
+        sys.exit(1)
+    except Exception as e:
+        logger.error(f"An unexpected error occurred during test execution: {e}", exc_info=True)
         sys.exit(1)
