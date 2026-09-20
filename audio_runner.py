@@ -179,7 +179,7 @@ async def deliver_combined_audio(
         )
         return
 
-    recipient = getattr(config, "combined_mp3_email", "barichan42073@gmail.com")
+    recipient = config.combined_mp3_email or "barichan42073@gmail.com"
 
     try:
         success = send_to_kindle.send_epub_to_kindle(

@@ -212,7 +212,7 @@ async def main():
         generated_slow_files, config
     )
     if combined_audio_path:
-        await audio_runner.deliver_combined_audio(combined_audio_path)
+        await audio_runner.deliver_combined_audio(combined_audio_path, config)
 
     # Update processed history JSON
     if newly_processed_article_ids:
