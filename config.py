@@ -46,6 +46,8 @@ class PipelineConfig:
     smartreader_dir: Path = Path("smartreader")
     use_staged_analysis: bool = False
     verbose: bool = False
+    kindle_email: str = os.getenv("KINDLE_EMAIL", "")
+    combined_mp3_email: str = os.getenv("COMBINED_MP3_EMAIL", "")
 
     @property
     def cutoff_date(self) -> datetime:

@@ -1,7 +1,0 @@
-(.venv) smartreader $ python3 pipeline.py --generate-html --no-kindle --no-audio --days-back 1 --max-articles 1 --verbose> log.txt 
-Traceback (most recent call last):
-  File "/home/nev/smartreader/pipeline.py", line 16, in <module>
-    from geminimodels import GeminiModels  # Added for model initialization
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-ImportError: cannot import name 'GeminiModels' from 'geminimodels' (/home/nev/smartreader/geminimodels.py)
-
