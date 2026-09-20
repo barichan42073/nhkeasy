@@ -3,6 +3,17 @@ import logging
 import sys
 from pathlib import Path
 
+from dataclasses import dataclass, field
+
+@dataclass
+class RunState:
+    """Holds dynamic state accumulated during a single pipeline run."""
+    newly_processed_article_ids: set[str] = field(default_factory=set)
+    all_filtered_vocabulary: list[dict[str, str]] = field(default_factory=list)
+    generated_slow_files: list[Path] = field(default_factory=list)
+    all_article_metadata_for_index: list[dict] = field(default_factory=list)
+    kindle_sent_count: int = 0
+
 # local imports
 import anki_runner
 import article_fetch_runner
