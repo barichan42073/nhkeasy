@@ -4,9 +4,30 @@ import smtplib
 import sys
 from pathlib import Path
 
-import pydub.exceptions as pydub_exceptions
+# 1. Update sys.path FIRST before importing local/third-party libs
+AVLIB_PATH = Path(__file__).resolve().parent.parent / "avlib" / "avlib"
+if str(AVLIB_PATH) not in sys.path:
+    sys.path.insert(0, str(AVLIB_PATH))
+
+# 2. Guard pydub import with a fallback exception class
+try:
+    from pydub import AudioSegment
+    from pydub.exceptions import PydubError
+except ImportError:
+    AudioSegment = None
+
+    class PydubError(Exception):
+        """Fallback exception when pydub is not installed."""
+        pass
+
 import requests
-from pydub import AudioSegment
+
+try:
+    import slowrecord
+except ImportError:
+    logger = logging.getLogger(__name__)
+    logger.error("Could not import slowrecord.")
+    slowrecord = None
 
 import audio_pipeline
 import send_to_kindle
@@ -20,16 +41,6 @@ logger = logging.getLogger(__name__)
 # audio boundary. Kept local to this module so future audio configuration
 # changes never require touching pipeline.py.
 # ---------------------------------------------------------------------------
-
-AVLIB_PATH = Path(__file__).resolve().parent.parent / "avlib" / "avlib"
-if str(AVLIB_PATH) not in sys.path:
-    sys.path.insert(0, str(AVLIB_PATH))
-
-try:
-    import slowrecord
-except ImportError:
-    logger.error("Could not import slowrecord.")
-    slowrecord = None
 
 
 def run_audio_preflight_checks(config: PipelineConfig) -> None:
@@ -88,7 +99,7 @@ async def execute_audio_processing_for_article(
                 "Could not remove temporary audio file %s",
                 task.audio_orig_path.name,
             )
-    except (OSError, requests.RequestException, pydub_exceptions.PydubError):
+    except (OSError, requests.RequestException, PydubError):
         logger.exception(
             "Audio generation failed for '%s' (ID: %s)",
             task.article_title,
@@ -122,11 +133,15 @@ async def combine_and_export_audio(
         len(generated_slow_files),
         config.combined_audio_path,
     )
-    combined_audio = AudioSegment.empty()
+    combined_audio = AudioSegment.empty() if AudioSegment else None
+    if combined_audio is None:
+        logger.error("pydub.AudioSegment is unavailable; cannot combine audio.")
+        return None
+
     for slow_path in generated_slow_files:
         try:
             combined_audio += AudioSegment.from_mp3(str(slow_path))
-        except (OSError, pydub_exceptions.PydubError):
+        except (OSError, PydubError):
             logger.exception(
                 "Failed to load %s for concatenation",
                 slow_path,
@@ -145,7 +160,7 @@ async def combine_and_export_audio(
                     logger.exception("Could not remove %s", slow_path.name)
             logger.info("Removed per-article slowed MP3 files.")
         return config.combined_audio_path
-    except (OSError, pydub_exceptions.PydubError):
+    except (OSError, PydubError):
         logger.exception("Failed to export combined MP3")
         return None
 
