@@ -37,6 +37,9 @@ class TestComputeIndexRenderData(unittest.TestCase):
                 "kicker": "Kicker 2",
             },
         ]
+        # Add date_obj to base articles for easier date comparisons in tests
+        for article in self.articles_from_current_run_base:
+            article["date_obj"] = datetime.fromisoformat(article["date"])
 
     def test_compute_index_render_data_basic_merge_and_sort(self):
         """
@@ -67,22 +70,10 @@ class TestComputeIndexRenderData(unittest.TestCase):
         self.assertEqual(len(template_data["today_grid_articles"]), 0) # Only lead article is from today
 
         self.assertEqual(len(template_data["older_articles_grouped"]), 1)
-        self.assertIn(
-            self.articles_from_current_run_base[1]["date_obj"].date(),
-            template_data["older_articles_grouped"],
-        )
-        self.assertEqual(
-            template_data["older_articles_grouped"][
-                self.articles_from_current_run_base[1]["date_obj"].date()
-            ]["articles"][0]["id"],
-            "article_id_2",
-        )
+        older_group = template_data["older_articles_grouped"][0] # Get the first (and only) older group
+        self.assertEqual(older_group["articles"][0]["id"], "article_id_2")
         # Check 'new' tag for older article
-        self.assertFalse(
-            template_data["older_articles_grouped"][
-                self.articles_from_current_run_base[1]["date_obj"].date()
-            ]["articles"][0].get("new", False)
-        )
+        self.assertFalse(older_group["articles"][0].get("new", False))
 
         self.assertEqual(template_data["current_date_japanese"], self.current_date_japanese_full)
         self.assertEqual(template_data["current_date_japanese_title"], self.current_date_japanese_title)
