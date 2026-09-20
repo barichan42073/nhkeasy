@@ -30,7 +30,12 @@ except ImportError:
     slowrecord = None
 
 import audio_pipeline
-import send_to_kindle
+
+try:
+    import send_to_kindle
+except ImportError:
+    send_to_kindle = None
+
 from config import PipelineConfig
 from utils import download_mp3
 
@@ -168,6 +173,10 @@ async def combine_and_export_audio(
 async def deliver_combined_audio(combined_audio_path: Path) -> None:
     """Sends the combined audio file to Kindle. Isolated so failures don't
     interrupt the rest of the pipeline's finalization steps."""
+    if send_to_kindle is None:
+        logger.error("send_to_kindle module is not available; cannot deliver combined audio.")
+        return
+
     try:
         success = send_to_kindle.send_epub_to_kindle(
             combined_audio_path, kindle_email="barichan42073@gmail.com"
