@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>NHK Easy Smart Reader — {{ current_date_japanese_title | e }}</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="head">
+            <div class="logo">NHK<span>やさしい</span>ニュース</div>
+            <div class="date">{{ current_date_japanese | e }}</div>
+        </div>
+    </header>
+
+    <main>
+        {% if lead_article %}
+            <a class="lead" href="{{ lead_article.relative_path | e }}">
+                <div class="photo">
+                    {% if lead_article.image_url %}
+                        <img src="{{ lead_article.image_url | e }}" alt="{{ lead_article.title | e }}">
+                    {% else %}
+                        <div class="fallback">NHK EASY NEWS</div>
+                    {% endif %}
+                    <div class="source">NHK NEWS EASY</div>
+                </div>
+                <div class="body">
+                    {% if lead_article.kicker %}
+                        <div class="kicker">{{ lead_article.kicker | e }}</div>
+                    {% endif %}
+                    <h1>{{ lead_article.title | e }}</h1>
+                    <div class="meta">
+                        {{ lead_article.date.strftime('%Y年%m月%d日 %H:%M') }}
+                        {% if lead_article.get('new') %} ・ NEW{% endif %}
+                    </div>
+                </div>
+            </a>
+        {% endif %}
+
+        {% if today_grid_articles %}
+            <div class="grid">
+                {% for article in today_grid_articles %}
+                    <a class="card" href="{{ article.relative_path | e }}">
+                        <div class="photo">
+                            {% if article.image_url %}
+                                <img src="{{ article.image_url | e }}" alt="{{ article.title | e }}">
+                            {% else %}
+                                <div class="fallback">NHK EASY NEWS</div>
+                            {% endif %}
+                            <div class="source">NHK NEWS EASY</div>
+                        </div>
+                        <div class="body">
+                            {% if article.kicker %}
+                                <div class="kicker">{{ article.kicker | e }}</div>
+                            {% endif %}
+                            <h2>{{ article.title | e }}</h2>
+                            <div class="meta">
+                                {{ article.date.strftime('%Y年%m月%d日 %H:%M') }}
+                                {% if article.get('new') %} ・ NEW{% endif %}
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% for group in older_articles_grouped %}
+            <h2 style="margin-top: 40px;">{{ group.date_japanese | e }}</h2>
+            <div class="grid">
+                {% for article in group.articles %}
+                    <a class="card" href="{{ article.relative_path | e }}">
+                        <div class="photo">
+                            {% if article.image_url %}
+                                <img src="{{ article.image_url | e }}" alt="{{ article.title | e }}">
+                            {% else %}
+                                <div class="fallback">NHK EASY NEWS</div>
+                            {% endif %}
+                            <div class="source">NHK NEWS EASY</div>
+                        </div>
+                        <div class="body">
+                            {% if article.kicker %}
+                                <div class="kicker">{{ article.kicker | e }}</div>
+                            {% endif %}
+                            <h2>{{ article.title | e }}</h2>
+                            <div class="meta">
+                                {{ article.date.strftime('%Y年%m月%d日 %H:%M') }}
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        {% endfor %}
+    </main>
+
+    <footer>
+        &copy; {{ current_date_obj.year }} NHK Easy Smart Reader. Generated for personal study use.
+    </footer>
+</body>
+</html>
