@@ -77,6 +77,36 @@ def save_processed_history(history: set[str], processed_history_json_path: Path)
         )
 
 
+def ensure_valid_unique_vocab_json(path: Path):
+    """Ensures the unique vocabulary JSON file exists and contains valid JSON."""
+    if not path.exists():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("{}", encoding="utf-8")
+        logger.info("Created empty unique vocabulary file at: %s", path)
+        return
+
+    if path.stat().st_size == 0:
+        path.write_text("{}", encoding="utf-8")
+        logger.info("Unique vocabulary file at %s was empty, initialized to '{}'.", path)
+        return
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            json.load(f)
+    except json.JSONDecodeError:
+        logger.warning(
+            "Unique vocabulary file at %s is corrupted. Resetting to '{}'.", path
+        )
+        path.write_text("{}", encoding="utf-8")
+    except Exception as e:
+        logger.warning(
+            "Unexpected error checking unique vocabulary file at %s: %s. Resetting to '{}'.",
+            path,
+            e,
+        )
+        path.write_text("{}", encoding="utf-8")
+
+
 def load_unique_vocab(unique_vocab_json_path: Path) -> dict[str, dict]:
     """Loads the master set of unique vocabulary from JSON."""
     if not unique_vocab_json_path.exists():

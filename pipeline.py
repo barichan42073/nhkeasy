@@ -1,5 +1,4 @@
 import asyncio
-import json
 import logging
 import sys
 from pathlib import Path
@@ -18,36 +17,6 @@ from config import PipelineConfig, parse_arguments
 from utils import sanitize_filename
 
 logger = logging.getLogger(__name__)
-
-
-def _ensure_valid_unique_vocab_json(path: Path):
-    """Ensures the unique vocabulary JSON file exists and contains valid JSON."""
-    if not path.exists():
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text("{}", encoding="utf-8")
-        logger.info("Created empty unique vocabulary file at: %s", path)
-        return
-
-    if path.stat().st_size == 0:
-        path.write_text("{}", encoding="utf-8")
-        logger.info("Unique vocabulary file at %s was empty, initialized to '{}'.", path)
-        return
-
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            json.load(f)
-    except json.JSONDecodeError:
-        logger.warning(
-            "Unique vocabulary file at %s is corrupted. Resetting to '{}'.", path
-        )
-        path.write_text("{}", encoding="utf-8")
-    except Exception as e:
-        logger.warning(
-            "Unexpected error checking unique vocabulary file at %s: %s. Resetting to '{}'.",
-            path,
-            e,
-        )
-        path.write_text("{}", encoding="utf-8")
 
 
 def _load_and_filter_articles(
@@ -192,7 +161,7 @@ async def main():
     fetch_rss.save_feed_data()
 
     # Ensure unique_vocab.json is valid before any Anki operations that might load it
-    _ensure_valid_unique_vocab_json(config.unique_vocab_json)
+    article_manager.ensure_valid_unique_vocab_json(config.unique_vocab_json)
 
     audio_runner.run_audio_preflight_checks(config)
 
