@@ -12,7 +12,6 @@ import analysis_runner
 import epub_runner
 import fetch_rss
 import html_runner
-import send_to_kindle  # noqa: F401  (kept for backward-compat import side effects)
 from config import PipelineConfig, parse_arguments
 from utils import sanitize_filename
 
