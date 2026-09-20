@@ -2,180 +2,218 @@ import json
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
-from jinja_render import render_html_from_json_data
-from pipeline import _generate_index_html
+# Import the new function from html_pipeline
+from html_pipeline import compute_index_render_data
 
 
-class TestGenerateIndexHtml(unittest.IsolatedAsyncioTestCase):
+class TestComputeIndexRenderData(unittest.TestCase):
     """
-    Tests for the _generate_index_html function in pipeline.py.
+    Tests for the compute_index_render_data function in html_pipeline.py.
     """
 
     def setUp(self):
-        """Set up test data and mocks before each test."""
-        self.smartreader_output_dir = Path("./temp_output_for_test")
-        self.newly_processed_article_ids = {"article_id_1"}
-        self.articles_from_current_run = [
+        """Set up test data before each test."""
+        self.current_date = datetime(2023, 1, 3, 15, 0, 0, tzinfo=timezone.utc)
+        self.current_date_japanese_full = "2023年01月03日 (火)"
+        self.current_date_japanese_title = "2023年01月03日"
+        self.current_date_iso = self.current_date.strftime("%Y-%m-%d")
+
+        self.articles_from_current_run_base = [
             {
                 "id": "article_id_1",
                 "title": "Test Article 1",
-                "date": "2023-01-01T10:00:00+00:00",
+                "date": "2023-01-03T10:00:00+00:00",
                 "relative_path": "test_article_1.html",
+                "image_url": "image1.jpg",
+                "kicker": "Kicker 1",
             },
             {
                 "id": "article_id_2",
                 "title": "Test Article 2",
                 "date": "2023-01-02T11:00:00+00:00",
                 "relative_path": "test_article_2.html",
+                "image_url": "image2.jpg",
+                "kicker": "Kicker 2",
             },
         ]
-        self.current_date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-        # Mock Path.mkdir for directory creation
-        self.mock_mkdir = patch.object(Path, "mkdir", MagicMock()).start()
-        # Mock Path.write_text for file writing
-        self.mock_write_text = patch.object(Path, "write_text", MagicMock()).start()
-        # Mock Path.is_file
-        self.mock_is_file = patch.object(
-            Path, "is_file", MagicMock(return_value=False)
-        ).start()
-        # Mock Path.read_text
-        self.mock_read_text = patch.object(
-            Path, "read_text", MagicMock(return_value="[]")
-        ).start()
-
-    def tearDown(self):
-        """Clean up mocks after each test."""
-        patch.stopall()
-
-    async def test_generate_index_html_creates_directory_and_file(self):
+    def test_compute_index_render_data_basic_merge_and_sort(self):
         """
-        Verify that _generate_index_html creates the output directory
-        and writes the index.html file with correct content.
+        Verify that compute_index_render_data correctly merges new articles,
+        sorts them, and structures the output.
         """
-        await _generate_index_html(
-            self.smartreader_output_dir,
-            self.newly_processed_article_ids,
-            self.articles_from_current_run,
+        newly_processed_article_ids = {"article_id_1"}
+        articles_from_current_run = [self.articles_from_current_run_base[0]]
+        existing_manifest = [self.articles_from_current_run_base[1]]
+
+        result = compute_index_render_data(
+            existing_manifest=existing_manifest,
+            articles_from_current_run=articles_from_current_run,
+            newly_processed_article_ids=newly_processed_article_ids,
+            current_date=self.current_date,
+            current_date_japanese_full=self.current_date_japanese_full,
+            current_date_japanese_title=self.current_date_japanese_title,
         )
 
-        # Assert that the output directory was created
-        self.mock_mkdir.assert_called_once_with(parents=True, exist_ok=True)
+        template_data = result["template_data"]
+        manifest_for_save = result["manifest_for_save"]
 
-        # Assert that jinja_render.render_html_from_json_data was called
-        # The first call to write_text is for index.html, the second for the manifest.
-        self.assertEqual(self.mock_write_text.call_count, 2)
+        # Assert template_data structure
+        self.assertIsNotNone(template_data["lead_article"])
+        self.assertEqual(template_data["lead_article"]["id"], "article_id_1")
+        self.assertTrue(template_data["lead_article"]["new"])  # Check 'new' tag for lead
 
-        # Verify index.html content write
-        expected_data = {
-            "new_articles": [self.articles_from_current_run[0]],
-            "older_articles_grouped": {
-                "2023-01-02": [self.articles_from_current_run[1]]
-            },
-            "current_date": self.current_date_str,
-        }
-        self.mock_write_text.assert_any_call(
-            render_html_from_json_data(
-                data=expected_data,
-                template_dir=Path(__file__).parent / "templates",
-                template_filename="smartreader_index.html",
-            ),
-            encoding="utf-8",
+        self.assertEqual(len(template_data["today_grid_articles"]), 0) # Only lead article is from today
+
+        self.assertEqual(len(template_data["older_articles_grouped"]), 1)
+        self.assertIn(
+            self.articles_from_current_run_base[1]["date_obj"].date(),
+            template_data["older_articles_grouped"],
+        )
+        self.assertEqual(
+            template_data["older_articles_grouped"][
+                self.articles_from_current_run_base[1]["date_obj"].date()
+            ]["articles"][0]["id"],
+            "article_id_2",
+        )
+        # Check 'new' tag for older article
+        self.assertFalse(
+            template_data["older_articles_grouped"][
+                self.articles_from_current_run_base[1]["date_obj"].date()
+            ]["articles"][0].get("new", False)
         )
 
-        # Verify manifest.json content write (checking for article_id_1 and article_id_2)
-        written_manifest_content = self.mock_write_text.call_args_list[1].args[0]
-        self.assertIn('"id": "article_id_1"', written_manifest_content)
-        self.assertIn('"id": "article_id_2"', written_manifest_content)
+        self.assertEqual(template_data["current_date_japanese"], self.current_date_japanese_full)
+        self.assertEqual(template_data["current_date_japanese_title"], self.current_date_japanese_title)
+        self.assertEqual(template_data["current_date_iso"], self.current_date_iso)
+        self.assertEqual(template_data["current_date_obj"], self.current_date)
 
-    async def test_generate_index_html_with_no_articles_in_run(self):
-        """
-        Verify behavior when no articles are passed for processing in the current run,
-        but existing manifest is empty.
-        """
-        await _generate_index_html(
-            self.smartreader_output_dir,
-            set(),
-            [],
-        )
-        self.mock_mkdir.assert_called_once_with(parents=True, exist_ok=True)
-        # Should still try to render the template and write the file
-        self.assertEqual(self.mock_write_text.call_count, 2)
 
-        # Verify index.html content (empty lists)
-        expected_data = {
-            "new_articles": [],
-            "older_articles_grouped": {},
-            "current_date": self.current_date_str,
-        }
-        self.mock_write_text.assert_any_call(
-            render_html_from_json_data(
-                data=expected_data,
-                template_dir=Path(__file__).parent / "templates",
-                template_filename="smartreader_index.html",
-            ),
-            encoding="utf-8",
+        # Assert manifest_for_save structure
+        self.assertEqual(len(manifest_for_save), 2)
+        self.assertEqual(manifest_for_save[0]["id"], "article_id_1")
+        self.assertEqual(manifest_for_save[1]["id"], "article_id_2")
+        self.assertNotIn("new", manifest_for_save[0])
+        self.assertNotIn("date_obj", manifest_for_save[0])
+
+    def test_compute_index_render_data_with_no_new_articles(self):
+        """
+        Verify behavior when no new articles are processed in the current run,
+        but existing manifest is present.
+        """
+        newly_processed_article_ids = set()
+        articles_from_current_run = []
+        existing_manifest = [self.articles_from_current_run_base[1]]
+
+        result = compute_index_render_data(
+            existing_manifest=existing_manifest,
+            articles_from_current_run=articles_from_current_run,
+            newly_processed_article_ids=newly_processed_article_ids,
+            current_date=self.current_date,
+            current_date_japanese_full=self.current_date_japanese_full,
+            current_date_japanese_title=self.current_date_japanese_title,
         )
 
-        # Verify manifest.json content (empty list)
-        written_manifest_content = self.mock_write_text.call_args_list[1].args[0]
-        self.assertEqual(written_manifest_content, "[]")
+        template_data = result["template_data"]
+        manifest_for_save = result["manifest_for_save"]
 
-    async def test_generate_index_html_loads_existing_manifest(self):
-        """
-        Verify that _generate_index_html correctly loads and merges with an existing manifest.
-        """
-        self.mock_is_file.return_value = True
-        existing_manifest_data = [
-            {
-                "id": "article_id_old",
-                "title": "Old Article",
-                "date": "2022-12-01T09:00:00+00:00",
-                "relative_path": "old_article.html",
-            }
-        ]
-        self.mock_read_text.return_value = json.dumps(existing_manifest_data)
+        # Lead article should be the latest from existing manifest
+        self.assertEqual(template_data["lead_article"]["id"], "article_id_2")
+        self.assertFalse(template_data["lead_article"].get("new", False))
 
+        self.assertEqual(len(template_data["today_grid_articles"]), 0)
+        self.assertEqual(len(template_data["older_articles_grouped"]), 0) # No older articles relative to the single lead article
+
+        # Manifest should reflect the existing articles
+        self.assertEqual(len(manifest_for_save), 1)
+        self.assertEqual(manifest_for_save[0]["id"], "article_id_2")
+
+    def test_compute_index_render_data_all_articles_today(self):
+        """
+        Verify grouping when multiple articles are from the 'current display date'.
+        """
+        self.current_date = datetime(2023, 1, 3, 15, 0, 0, tzinfo=timezone.utc)
         articles_from_current_run = [
             {
-                "id": "article_id_new",
-                "title": "New Article",
-                "date": "2023-01-03T12:00:00+00:00",
-                "relative_path": "new_article.html",
-            }
+                "id": "article_id_A",
+                "title": "Article A",
+                "date": "2023-01-03T09:00:00+00:00",
+                "relative_path": "a.html",
+                "image_url": "imgA.jpg",
+                "kicker": "Kicker A",
+            },
+            {
+                "id": "article_id_B",
+                "title": "Article B",
+                "date": "2023-01-03T11:00:00+00:00",
+                "relative_path": "b.html",
+                "image_url": "imgB.jpg",
+                "kicker": "Kicker B",
+            },
+            {
+                "id": "article_id_C",
+                "title": "Article C",
+                "date": "2023-01-03T10:30:00+00:00",
+                "relative_path": "c.html",
+                "image_url": "imgC.jpg",
+                "kicker": "Kicker C",
+            },
         ]
-        newly_processed_article_ids = {"article_id_new"}
+        newly_processed_article_ids = {"article_id_A", "article_id_B", "article_id_C"}
 
-        await _generate_index_html(
-            self.smartreader_output_dir,
-            newly_processed_article_ids,
-            articles_from_current_run,
+        result = compute_index_render_data(
+            existing_manifest=[],
+            articles_from_current_run=articles_from_current_run,
+            newly_processed_article_ids=newly_processed_article_ids,
+            current_date=self.current_date,
+            current_date_japanese_full=self.current_date_japanese_full,
+            current_date_japanese_title=self.current_date_japanese_title,
         )
 
-        # Assert that existing manifest was read
-        self.mock_read_text.assert_called_once()
+        template_data = result["template_data"]
+        # The latest article (B) should be lead
+        self.assertEqual(template_data["lead_article"]["id"], "article_id_B")
+        self.assertTrue(template_data["lead_article"]["new"])
 
-        # Verify index.html content
-        expected_data = {
-            "new_articles": [articles_from_current_run[0]],
-            "older_articles_grouped": {"2022-12-01": [existing_manifest_data[0]]},
-            "current_date": self.current_date_str,
-        }
-        self.mock_write_text.assert_any_call(
-            render_html_from_json_data(
-                data=expected_data,
-                template_dir=Path(__file__).parent / "templates",
-                template_filename="smartreader_index.html",
-            ),
-            encoding="utf-8",
+        # The other two (A and C) should be in today_grid_articles, sorted by date (desc)
+        self.assertEqual(len(template_data["today_grid_articles"]), 2)
+        self.assertEqual(template_data["today_grid_articles"][0]["id"], "article_id_C") # 10:30
+        self.assertEqual(template_data["today_grid_articles"][1]["id"], "article_id_A") # 09:00
+
+        self.assertEqual(len(template_data["older_articles_grouped"]), 0)
+        self.assertEqual(len(result["manifest_for_save"]), 3)
+
+
+    def test_compute_index_render_data_with_no_articles_at_all(self):
+        """
+        Verify behavior when no articles are available, neither existing nor new.
+        """
+        newly_processed_article_ids = set()
+        articles_from_current_run = []
+        existing_manifest = []
+
+        result = compute_index_render_data(
+            existing_manifest=existing_manifest,
+            articles_from_current_run=articles_from_current_run,
+            newly_processed_article_ids=newly_processed_article_ids,
+            current_date=self.current_date,
+            current_date_japanese_full=self.current_date_japanese_full,
+            current_date_japanese_title=self.current_date_japanese_title,
         )
 
-        # Verify manifest.json content
-        written_manifest_content = self.mock_write_text.call_args_list[1].args[0]
-        self.assertIn('"id": "article_id_old"', written_manifest_content)
-        self.assertIn('"id": "article_id_new"', written_manifest_content)
+        template_data = result["template_data"]
+        manifest_for_save = result["manifest_for_save"]
+
+        self.assertIsNone(template_data["lead_article"])
+        self.assertEqual(template_data["today_grid_articles"], [])
+        self.assertEqual(template_data["older_articles_grouped"], [])
+        self.assertEqual(template_data["current_date_japanese"], self.current_date_japanese_full)
+        self.assertEqual(template_data["current_date_japanese_title"], self.current_date_japanese_title)
+        self.assertEqual(template_data["current_date_iso"], self.current_date_iso)
+        self.assertEqual(template_data["current_date_obj"], self.current_date)
+
+        self.assertEqual(manifest_for_save, [])
 
 
 # This allows running the tests directly from the command line
