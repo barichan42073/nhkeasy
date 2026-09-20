@@ -169,20 +169,24 @@ async def combine_and_export_audio(
         logger.exception("Failed to export combined MP3")
         return None
 
-
-async def deliver_combined_audio(combined_audio_path: Path) -> None:
-    """Sends the combined audio file to Kindle. Isolated so failures don't
-    interrupt the rest of the pipeline's finalization steps."""
+async def deliver_combined_audio(
+    combined_audio_path: Path, config: PipelineConfig
+) -> None:
+    """Sends the combined audio file to the configured destination email."""
     if send_to_kindle is None:
-        logger.error("send_to_kindle module is not available; cannot deliver combined audio.")
+        logger.error(
+            "send_to_kindle module is not available; cannot deliver combined audio."
+        )
         return
+
+    recipient = getattr(config, "combined_mp3_email", "barichan42073@gmail.com")
 
     try:
         success = send_to_kindle.send_epub_to_kindle(
-            combined_audio_path, kindle_email="barichan42073@gmail.com"
+            combined_audio_path, kindle_email=recipient
         )
         if success:
-            logger.info("Sent combined MP3 to barichan42073@gmail.com")
+            logger.info("Sent combined MP3 to %s", recipient)
         else:
             logger.error("Failed to send combined MP3 via email")
     except (OSError, smtplib.SMTPException):
