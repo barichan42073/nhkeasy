@@ -1,25 +1,15 @@
 import asyncio
 import logging
 import sys
-from pathlib import Path
-
 from dataclasses import dataclass, field
-
-@dataclass
-class RunState:
-    """Holds dynamic state accumulated during a single pipeline run."""
-    newly_processed_article_ids: set[str] = field(default_factory=set)
-    all_filtered_vocabulary: list[dict[str, str]] = field(default_factory=list)
-    generated_slow_files: list[Path] = field(default_factory=list)
-    all_article_metadata_for_index: list[dict] = field(default_factory=list)
-    kindle_sent_count: int = 0
+from pathlib import Path
 
 # local imports
 import anki_runner
+import analysis_runner
 import article_fetch_runner
 import article_manager
 import audio_runner
-import analysis_runner
 import epub_runner
 import fetch_rss
 import html_runner
@@ -27,6 +17,17 @@ from config import PipelineConfig, parse_arguments
 from utils import sanitize_filename
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class RunState:
+    """Holds dynamic state accumulated during a single pipeline run."""
+
+    newly_processed_article_ids: set[str] = field(default_factory=set)
+    all_filtered_vocabulary: list[dict[str, str]] = field(default_factory=list)
+    generated_slow_files: list[Path] = field(default_factory=list)
+    all_article_metadata_for_index: list[dict] = field(default_factory=list)
+    kindle_sent_count: list[int] = field(default_factory=lambda: [0])
 
 
 def _load_and_filter_articles(
@@ -65,11 +66,7 @@ def _load_and_filter_articles(
 async def _process_single_article(
     article: dict,
     config: PipelineConfig,
-    newly_processed_article_ids: set[str],
-    all_filtered_vocabulary: list[dict[str, str]],
-    generated_slow_files: list[Path],
-    all_article_metadata_for_index: list[dict],
-    kindle_sent_count: list[int],
+    state: RunState,
     existing_unique_vocab: dict[str, dict],
 ):
     """Processes a single article through all pipeline steps."""
@@ -90,7 +87,9 @@ async def _process_single_article(
     if not raw_html_content or not article_text_for_gemini:
         return
 
-    analysis_json_filename = f"{sanitize_filename(article_title)}_{sanitize_filename(article_id)}_analysis.json"
+    analysis_json_filename = (
+        f"{sanitize_filename(article_title)}_{sanitize_filename(article_id)}_analysis.json"
+    )
     analysis_json_path = config.smartreader_dir / analysis_json_filename
 
     analysis = await analysis_runner.get_article_analysis(
@@ -105,8 +104,8 @@ async def _process_single_article(
         config,
         raw_html_content,
         analysis,
-        newly_processed_article_ids,
-        kindle_sent_count,
+        state.newly_processed_article_ids,
+        state.kindle_sent_count,
     )
 
     if config.generate_html:
@@ -115,8 +114,8 @@ async def _process_single_article(
             raw_html_content,
             analysis,
             config,
-            all_filtered_vocabulary,
-            all_article_metadata_for_index,
+            state.all_filtered_vocabulary,
+            state.all_article_metadata_for_index,
         )
 
     anki_runner.collect_article_vocab_for_anki(
@@ -124,27 +123,23 @@ async def _process_single_article(
         config,
         article_markdown_content,
         existing_unique_vocab,
-        all_filtered_vocabulary,
+        state.all_filtered_vocabulary,
     )
 
     await audio_runner.execute_audio_processing_for_article(
         article,
         config,
         raw_html_content,
-        newly_processed_article_ids,
-        generated_slow_files,
+        state.newly_processed_article_ids,
+        state.generated_slow_files,
     )
 
 
 async def _process_all_articles(
-    articles_to_process,
-    config,
-    newly_processed_article_ids,
-    all_filtered_vocabulary,
-    generated_slow_files,
-    all_article_metadata_for_index,
-    kindle_sent_count,
-    existing_unique_vocab,
+    articles_to_process: list[dict],
+    config: PipelineConfig,
+    state: RunState,
+    existing_unique_vocab: dict[str, dict],
 ):
     """Iterates through and processes each article."""
     for article in articles_to_process:
@@ -152,11 +147,7 @@ async def _process_all_articles(
             await _process_single_article(
                 article,
                 config,
-                newly_processed_article_ids,
-                all_filtered_vocabulary,
-                generated_slow_files,
-                all_article_metadata_for_index,
-                kindle_sent_count,
+                state,
                 existing_unique_vocab,
             )
         except Exception:
@@ -185,57 +176,53 @@ async def main():
     if not articles_to_process:
         return
 
-    # Load the master unique-vocab store once for the whole run. It is only
-    # written back at the end, in anki_runner.generate_and_deliver_daily_anki_package.
+    # Load the master unique-vocab store once for the whole run.
     existing_unique_vocab = article_manager.load_unique_vocab(
         config.unique_vocab_json
     )
 
-    newly_processed_article_ids = set()
-    all_filtered_vocabulary = []
-    generated_slow_files = []
-    all_article_metadata_for_index = []
-    kindle_sent_count = [0]
+    state = RunState()
 
     await _process_all_articles(
         articles_to_process,
         config,
-        newly_processed_article_ids,
-        all_filtered_vocabulary,
-        generated_slow_files,
-        all_article_metadata_for_index,
-        kindle_sent_count,
+        state,
         existing_unique_vocab,
     )
 
     if config.generate_html:
         await html_runner.write_smartreader_index(
             config=config,
-            newly_processed_article_ids=newly_processed_article_ids,
-            articles_from_current_run=all_article_metadata_for_index,
+            newly_processed_article_ids=state.newly_processed_article_ids,
+            articles_from_current_run=state.all_article_metadata_for_index,
         )
 
     # Generate combined Anki package for the daily pool and update unique_vocab.json ONCE
-    await anki_runner.generate_and_deliver_daily_anki_package(all_filtered_vocabulary, config)
+    await anki_runner.generate_and_deliver_daily_anki_package(
+        state.all_filtered_vocabulary, config
+    )
 
     # Combined Audio creation, followed by delivery (sequenced by the orchestrator)
     combined_audio_path = await audio_runner.combine_and_export_audio(
-        generated_slow_files, config
+        state.generated_slow_files, config
     )
     if combined_audio_path:
         await audio_runner.deliver_combined_audio(combined_audio_path, config)
 
     # Update processed history JSON
-    if newly_processed_article_ids:
-        processed_history.update(newly_processed_article_ids)
+    if state.newly_processed_article_ids:
+        processed_history.update(state.newly_processed_article_ids)
         article_manager.save_processed_history(
             processed_history, config.processed_history_json
         )
         logger.info(
             "Updated processed history: %d entries in %s.",
-            len(processed_history),
+            len(state.newly_processed_article_ids),
             config.processed_history_json,
         )
+
+    if state.kindle_sent_count[0] > 0:
+        logger.info("Sent %d EPUB(s) to Kindle.", state.kindle_sent_count[0])
 
     logger.info("Pipeline processing complete.")
 
