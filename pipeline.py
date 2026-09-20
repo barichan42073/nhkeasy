@@ -1,11 +1,7 @@
 import asyncio
 import json
-import locale
 import logging
-import platform
-import shutil
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
 # local imports
@@ -13,13 +9,12 @@ import anki_runner
 import article_manager
 import audio_runner
 import fetch_rss
-import html_pipeline
+import html_runner
 import nhkeasier_to_epub
 import send_to_kindle
 from article_schema import ArticleAnalysis
 from config import PipelineConfig, parse_arguments
 from geminimodels import GeminiModels
-from jinja_render import render_html_from_json_data
 from utils import sanitize_filename
 
 logger = logging.getLogger(__name__)
@@ -214,38 +209,6 @@ def _load_and_filter_articles(
     }
 
 
-async def _write_article_html_output(
-    article: dict,
-    raw_html_content: str,
-    analysis: ArticleAnalysis,
-    config: PipelineConfig,
-    all_filtered_vocabulary: list[dict[str, str]],
-    all_article_metadata_for_index: list[dict],
-) -> None:
-    """
-    Imperative-shell wrapper: asks the functional core to build the HTML
-    payload, then writes it to disk and updates the shared in-memory lists.
-    """
-    payload = html_pipeline.build_article_html_payload(
-        article, raw_html_content, analysis
-    )
-    if payload is None:
-        return
-
-    html_output_path = config.smartreader_dir / payload.html_filename
-    try:
-        html_output_path.write_text(payload.html_content, encoding="utf-8")
-        logger.info("Generated interactive HTML article: %s", html_output_path)
-    except OSError:
-        logger.exception(
-            "Failed to write interactive HTML article to %s", html_output_path
-        )
-        return
-
-    all_article_metadata_for_index.append(payload.metadata_entry)
-    all_filtered_vocabulary.extend(payload.vocab_items)
-
-
 async def _process_single_article(
     article: dict,
     config: PipelineConfig,
@@ -313,7 +276,7 @@ async def _process_single_article(
     )
 
     if config.generate_html:
-        await _write_article_html_output(
+        await html_runner.write_article_html_output(
             article,
             raw_html_content,
             analysis,
@@ -367,99 +330,6 @@ async def _process_all_articles(
             logger.exception("Failed to process article '%s'", article_title)
 
 
-async def _write_smartreader_index(
-    config: PipelineConfig,
-    newly_processed_article_ids: set[str],
-    articles_from_current_run: list[dict],
-) -> None:
-    """
-    Imperative-shell function: handles locale configuration, reading the
-    existing manifest, delegating the pure merge/sort/group logic to
-    html_pipeline.compute_index_render_data, and writing out index.html,
-    the manifest, and styles.css.
-    """
-    smartreader_output_dir = config.smartreader_dir
-    index_template_path = Path(__file__).parent / "templates" / "smartreader_index.html"
-    styles_source_path = Path(__file__).parent / "styles.css"
-    index_output_path = smartreader_output_dir / "index.html"
-    manifest_path = smartreader_output_dir / "articles_manifest.json"
-
-    smartreader_output_dir.mkdir(parents=True, exist_ok=True)
-
-    original_locale = None
-    try:
-        if platform.system() == "Windows":
-            original_locale = locale.setlocale(locale.LC_TIME, "Japanese_Japan.932")
-        else:  # For Linux/macOS
-            original_locale = locale.setlocale(locale.LC_TIME, "ja_JP.UTF-8")
-    except locale.Error:
-        logger.warning(
-            "Could not set locale for Japanese date formatting. Falling back to default."
-        )
-        original_locale = None
-
-    current_date = datetime.now(timezone.utc)
-
-    if original_locale:
-        current_date_japanese_full = current_date.strftime("%Y年%m月%d日（%a）")
-        current_date_japanese_title = current_date.strftime("%Y年%m月%d日")
-        locale.setlocale(locale.LC_TIME, original_locale)
-    else:
-        current_date_japanese_full = current_date.strftime("%Y年%m月%d日")
-        current_date_japanese_title = current_date_japanese_full
-
-    existing_manifest: list[dict] = []
-    if manifest_path.is_file():
-        try:
-            existing_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
-            logger.warning(
-                "Could not read existing manifest at %s; starting fresh.",
-                manifest_path,
-            )
-            existing_manifest = []
-
-    render_data = html_pipeline.compute_index_render_data(
-        existing_manifest=existing_manifest,
-        articles_from_current_run=articles_from_current_run,
-        newly_processed_article_ids=newly_processed_article_ids,
-        current_date=current_date,
-        current_date_japanese_full=current_date_japanese_full,
-        current_date_japanese_title=current_date_japanese_title,
-    )
-
-    try:
-        rendered_html = render_html_from_json_data(
-            data=render_data["template_data"],
-            template_dir=index_template_path.parent,
-            template_filename=index_template_path.name,
-        )
-        index_output_path.write_text(rendered_html, encoding="utf-8")
-        logger.info("Generated SmartReader index HTML: %s", index_output_path)
-
-        manifest_path.write_text(
-            json.dumps(render_data["manifest_for_save"], ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
-        logger.info("Generated manifest file: %s", manifest_path)
-
-        if not styles_source_path.is_file():
-            logger.warning(
-                "Source styles.css not found at %s. Skipping copy.", styles_source_path
-            )
-        else:
-            styles_destination_path = smartreader_output_dir / "styles.css"
-            try:
-                shutil.copy(styles_source_path, styles_destination_path)
-                logger.info("Copied styles.css to %s", styles_destination_path)
-            except OSError:
-                logger.exception(
-                    "Failed to copy styles.css to %s", styles_destination_path
-                )
-    except Exception:
-        logger.exception("Failed to generate or save index.html for Smart Reader.")
-
-
 async def main():
     config = parse_arguments()
 
@@ -505,7 +375,7 @@ async def main():
     )
 
     if config.generate_html:
-        await _write_smartreader_index(
+        await html_runner.write_smartreader_index(
             config=config,
             newly_processed_article_ids=newly_processed_article_ids,
             articles_from_current_run=all_article_metadata_for_index,
