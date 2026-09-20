@@ -2,22 +2,16 @@ import asyncio
 import json
 import locale
 import logging
-import os
 import platform
 import shutil
-import smtplib
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-import pydub.exceptions as pydub_exceptions
-import requests
-from pydub import AudioSegment
-
 # local imports
 import anki_runner
 import article_manager
-import audio_pipeline
+import audio_runner
 import fetch_rss
 import html_pipeline
 import nhkeasier_to_epub
@@ -26,28 +20,9 @@ from article_schema import ArticleAnalysis
 from config import PipelineConfig, parse_arguments
 from geminimodels import GeminiModels
 from jinja_render import render_html_from_json_data
-from utils import download_mp3, sanitize_filename
+from utils import sanitize_filename
 
 logger = logging.getLogger(__name__)
-
-# ---------------------------------------------------------------------------
-# Imperative Shell: optional dependency / environment wiring.
-#
-# All environment probing (module imports that depend on external, optional
-# packages living outside this project) lives here rather than in the
-# functional-core modules, since import resolution and sys.path mutation are
-# process-level side effects.
-# ---------------------------------------------------------------------------
-
-AVLIB_PATH = Path(__file__).resolve().parent.parent / "avlib" / "avlib"
-if str(AVLIB_PATH) not in sys.path:
-    sys.path.insert(0, str(AVLIB_PATH))
-
-try:
-    import slowrecord
-except ImportError:
-    logger.error("Could not import slowrecord.")
-    slowrecord = None
 
 
 def _ensure_valid_unique_vocab_json(path: Path):
@@ -239,76 +214,6 @@ def _load_and_filter_articles(
     }
 
 
-def _run_audio_preflight_checks(config: PipelineConfig) -> None:
-    """
-    Imperative-shell wrapper: probes the environment (module import result,
-    env var presence), delegates the pure validation logic to
-    audio_pipeline.check_audio_preflight, and exits the process on failure.
-    """
-    errors = audio_pipeline.check_audio_preflight(
-        config,
-        slowrecord_available=slowrecord is not None,
-        groq_api_key_present=bool(os.getenv("GROQ_API_KEY")),
-    )
-    for message in errors:
-        logger.error(message)
-    if errors:
-        sys.exit(1)
-
-
-async def _execute_audio_processing_for_article(
-    article: dict,
-    config: PipelineConfig,
-    raw_html_content: str | None,
-    newly_processed_article_ids: set[str],
-    generated_slow_files: list[Path],
-) -> None:
-    """
-    Imperative-shell wrapper: asks the functional core whether/how to
-    process audio for this article, then performs the actual download,
-    external 'slowrecord' invocation, and file cleanup.
-    """
-    if config.no_audio:
-        return
-
-    if slowrecord is None:
-        logger.warning("slowrecord module is not available; cannot generate audio.")
-        return
-
-    task = audio_pipeline.build_audio_task(article, config, raw_html_content)
-    if task is None:
-        return
-
-    audio_processed = False
-    try:
-        download_mp3(task.mp3_url, task.audio_orig_path)
-        slowrecord.process_news_with_pysbd(  # type: ignore
-            str(task.audio_orig_path), str(task.slowed_path)
-        )
-        generated_slow_files.append(task.slowed_path)
-        logger.info("Created slowed MP3: %s", task.slowed_path.name)
-        audio_processed = True
-        try:
-            task.audio_orig_path.unlink(missing_ok=True)
-        except OSError:
-            logger.exception(
-                "Could not remove temporary audio file %s",
-                task.audio_orig_path.name,
-            )
-    except (OSError, requests.RequestException, pydub_exceptions.PydubError):
-        logger.exception(
-            "Audio generation failed for '%s' (ID: %s)",
-            task.article_title,
-            task.article_id,
-        )
-
-    if audio_pipeline.should_mark_article_processed_for_audio_only(
-        config, audio_processed
-    ):
-        newly_processed_article_ids.add(task.article_id)
-        logger.info("'%s' (audio only) marked as processed.", task.article_title)
-
-
 async def _write_article_html_output(
     article: dict,
     raw_html_content: str,
@@ -425,7 +330,7 @@ async def _process_single_article(
         all_filtered_vocabulary,
     )
 
-    await _execute_audio_processing_for_article(
+    await audio_runner.execute_audio_processing_for_article(
         article,
         config,
         raw_html_content,
@@ -460,69 +365,6 @@ async def _process_all_articles(
         except Exception:
             article_title = article.get("title", "Untitled Article")
             logger.exception("Failed to process article '%s'", article_title)
-
-
-async def _combine_and_export_audio(
-    generated_slow_files: list[Path], config: PipelineConfig
-) -> Path | None:
-    """
-    Imperative-shell function: combines all generated slowed MP3 files and
-    exports the combined audio. Cleans up individual slowed files on
-    success. Delivery (e.g. sending to Kindle) is handled separately by
-    _deliver_combined_audio so the orchestrator can sequence it.
-    """
-    if not generated_slow_files:
-        logger.info(
-            "No slowed MP3 files were generated; skipping combined audio creation."
-        )
-        return None
-
-    logger.info(
-        "Combining %d slowed MP3 files into %s...",
-        len(generated_slow_files),
-        config.combined_audio_path,
-    )
-    combined_audio = AudioSegment.empty()
-    for slow_path in generated_slow_files:
-        try:
-            combined_audio += AudioSegment.from_mp3(str(slow_path))
-        except (OSError, pydub_exceptions.PydubError):
-            logger.exception(
-                "Failed to load %s for concatenation",
-                slow_path,
-            )
-
-    try:
-        combined_audio.export(str(config.combined_audio_path), format="mp3")
-        logger.info(
-            "Created combined MP3: %s", config.combined_audio_path.resolve()
-        )
-        if not config.keep_slow_mp3:
-            for slow_path in generated_slow_files:
-                try:
-                    slow_path.unlink(missing_ok=True)
-                except OSError:
-                    logger.exception("Could not remove %s", slow_path.name)
-            logger.info("Removed per-article slowed MP3 files.")
-        return config.combined_audio_path
-    except (OSError, pydub_exceptions.PydubError):
-        logger.exception("Failed to export combined MP3")
-        return None
-
-
-async def _deliver_combined_audio(combined_audio_path: Path) -> None:
-    """Sends the combined audio file to Kindle. Isolated so failures don't
-    interrupt the rest of the pipeline's finalization steps."""
-    try:
-        success = send_to_kindle.send_epub_to_kindle(
-            combined_audio_path, kindle_email="barichan42073@gmail.com"
-        )
-        if success:
-            logger.info("Sent combined MP3 to barichan42073@gmail.com")
-        else:
-            logger.error("Failed to send combined MP3 via email")
-    except (OSError, smtplib.SMTPException):
-        logger.exception("Failed to send combined MP3 via email")
 
 
 async def _write_smartreader_index(
@@ -627,7 +469,7 @@ async def main():
     # Ensure unique_vocab.json is valid before any Anki operations that might load it
     _ensure_valid_unique_vocab_json(config.unique_vocab_json)
 
-    _run_audio_preflight_checks(config)
+    audio_runner.run_audio_preflight_checks(config)
 
     processed_history = article_manager.load_processed_history(
         config.processed_history_json
@@ -673,11 +515,11 @@ async def main():
     await anki_runner.generate_and_deliver_daily_anki_package(all_filtered_vocabulary, config)
 
     # Combined Audio creation, followed by delivery (sequenced by the orchestrator)
-    combined_audio_path = await _combine_and_export_audio(
+    combined_audio_path = await audio_runner.combine_and_export_audio(
         generated_slow_files, config
     )
     if combined_audio_path:
-        await _deliver_combined_audio(combined_audio_path)
+        await audio_runner.deliver_combined_audio(combined_audio_path)
 
     # Update processed history JSON
     if newly_processed_article_ids:
