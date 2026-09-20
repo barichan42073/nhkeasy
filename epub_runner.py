@@ -20,6 +20,7 @@ from config import PipelineConfig
 from utils import sanitize_filename
 
 logger = logging.getLogger(__name__)
+logging.getLogger("nhkeasier_to_epub").setLevel(logging.WARNING)
 
 
 def _build_epub_output_path(article: dict, config: PipelineConfig) -> Path:

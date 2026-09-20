@@ -357,7 +357,7 @@ def convert_md_to_epub(
 
     logger.info(f"Converting '{md_file.name}' -> '{output_epub.name}' with Calibre...")
     try:
-        subprocess.run(cmd, check=True)
+        subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         logger.info(f"Calibre conversion successful: {output_epub.resolve()}")
     except subprocess.CalledProcessError as e:
         logger.error(
