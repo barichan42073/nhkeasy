@@ -17,7 +17,8 @@ import httpx
 # import urllib.request # Replaced by Playwright
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from google import genai, types  # Now using Gemini
+from google import genai
+from google.genai import types  # Now using Gemini
 from playwright.async_api import async_playwright
 
 from article_schema import ArticleAnalysis  # Import ArticleAnalysis
@@ -42,7 +43,8 @@ async def fetch_article_html(url: str) -> str:
     if "nhkeasier.com" in url:
         logger.info(f"Fetching lightweight HTML from {url} via httpx...")
         try:
-            async with httpx.AsyncClient() as client:
+            # In fetch_article_html:
+            async with httpx.AsyncClient(follow_redirects=True) as client:
                 resp = await client.get(
                     url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10.0
                 )
