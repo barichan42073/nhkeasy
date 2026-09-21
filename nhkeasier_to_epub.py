@@ -17,7 +17,7 @@ import httpx
 # import urllib.request # Replaced by Playwright
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from google import genai  # Now using Gemini
+from google import genai, types  # Now using Gemini
 from playwright.async_api import async_playwright
 
 from article_schema import ArticleAnalysis  # Import ArticleAnalysis
@@ -189,8 +189,7 @@ def generate_markdown(article_content: str, system_prompt: str, model_name: str)
         raise ValueError("GEMINI_API_KEY environment variable not set.")
 
     client = genai.Client(api_key=api_key)
-    full_prompt = (
-        f"{system_prompt}\n\n"
+    user_prompt = (
         "Convert the following NHK Easy article text into formatted Markdown according to your system instructions:\n\n"
         f"{article_content}"
     )
@@ -198,11 +197,11 @@ def generate_markdown(article_content: str, system_prompt: str, model_name: str)
     try:
         response = client.models.generate_content(
             model=model_name,
-            contents=full_prompt,
-            # No specific response_mime_type or response_schema for plain markdown text
+            contents=user_prompt,
+            config=types.GenerateContentConfig(system_instruction=system_prompt),
         )
 
-        if hasattr(response, "usage_metadata") and response.usage_metadata:
+        if response.usage_metadata:
             logger.info(
                 f"API Token Usage: {response.usage_metadata.total_token_count} total "
                 f"({response.usage_metadata.prompt_token_count} prompt, "
