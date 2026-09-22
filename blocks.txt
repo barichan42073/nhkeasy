@@ -1,5 +1,0 @@
-<<<<<<< SEARCH                                                                                                         
-    existing_unique_vocab = article_manager.load_unique_vocab(config.unique_vocab_json_path)                           
-=======                                                                                                                
-    existing_unique_vocab = article_manager.load_unique_vocab(config.unique_vocab_json)                                
->>>>>>> REPLACE    

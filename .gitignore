@@ -3,12 +3,6 @@ venv/
 env/
 .aider*
 .env
-.env
-.env
-.env
-.env
-.env
-.env
 __pycache__/
 *.pyc
 *.pyo
@@ -18,3 +12,11 @@ log.txt
 .venv/
 .idea/
 .vscode/
+
+# Logs and AI scratchpads
+log.txt
+error.txt
+chat.md
+context.md
+worldcup.html
+worldcup1_files/

@@ -1,2 +1,0 @@
-def snippet :
-  print "this is a snippet BIG"
