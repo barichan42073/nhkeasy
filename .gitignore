@@ -13,12 +13,3 @@ log.txt
 .idea/
 .vscode/
 
-# Logs and AI scratchpads
-log.txt
-error.txt
-chat.md
-context.md
-worldcup.html
-worldcup1_files/
-pipeline_deps.*
-status*.txt
