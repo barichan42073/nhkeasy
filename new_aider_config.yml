@@ -1,4 +1,0 @@
-read:
-  - ~/.CONVENTIONS.md
-lint-cmd: "sh -c 'ruff check --fix "$@" && ruff format "$@"' -- templates/smartreader_index.html"
-auto-lint: true
