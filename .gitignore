@@ -20,3 +20,5 @@ chat.md
 context.md
 worldcup.html
 worldcup1_files/
+pipeline_deps.*
+status*.txt
