@@ -17,15 +17,29 @@ OUTPUT_FILE = OUTPUT_DIR / "articles.json"
 FEED_URL = "https://nhkeasier.com/feed/"  # Or your target RSS feed URL
 
 
-def save_feed_data():
+def save_feed_data(days_back: int = 3, feed_source: str | Path | None = None, output_file: Path = OUTPUT_FILE):
     # Ensure storage directory exists
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+
+    # Resolve feed source
+    resolved_source = FEED_URL
+    if feed_source:
+        if isinstance(feed_source, Path):
+            resolved_source = str(feed_source)
+        else:
+            resolved_source = feed_source
+        logger.info("Using custom feed source: %s", resolved_source)
+    else:
+        logger.info("Using default feed source: %s", resolved_source)
 
     # Fetch and parse feed
-    feed = feedparser.parse(FEED_URL)
+    feed = feedparser.parse(resolved_source)
     new_articles = []
 
-    cutoff_date = datetime.now(timezone.utc) - timedelta(days=3)
+    # Calculate cutoff days
+    cutoff_days = max(days_back, 3) if days_back > 0 else 3
+    cutoff_date = datetime.now(timezone.utc) - timedelta(days=cutoff_days)
+    logger.info("Cutoff date set to %s (considering up to %d days back)", cutoff_date, cutoff_days)
 
     for entry in feed.entries:
         published_str = entry.get("published", "")
@@ -35,7 +49,7 @@ def save_feed_data():
                 if pub_date.tzinfo is None:
                     pub_date = pub_date.replace(tzinfo=timezone.utc)
                 if pub_date < cutoff_date:
-                    logger.debug("Skipping entry older than 3 days: %s", entry.title)
+                    logger.debug("Skipping entry older than %d days: %s", cutoff_days, entry.title)
                     continue
             except (ValueError, TypeError):
                 pass  # If date parsing fails, process entry as fallback
@@ -47,7 +61,6 @@ def save_feed_data():
             "published": published_str,
             "summary": entry.get("summary", ""),
         }
-
         logger.debug("Processing entry: %s", entry.title)
 
         # Extract image URL from the summary HTML
@@ -70,16 +83,34 @@ def save_feed_data():
         new_articles.append(article)
 
     # Simple atomic write to JSON file
-    temp_file = OUTPUT_FILE.with_suffix(".tmp")
+    temp_file = output_file.with_suffix(".tmp")
     with open(temp_file, "w", encoding="utf-8") as f:
         json.dump(new_articles, f, ensure_ascii=False, indent=2)
 
     # Rename temp file to main file (prevents corrupt files if laptop goes to sleep mid-write)
-    temp_file.replace(OUTPUT_FILE)
+    temp_file.replace(output_file)
     logger.info(
-        "Successfully updated %d articles to %s", len(new_articles), OUTPUT_FILE
+        "Successfully updated %d articles to %s", len(new_articles), output_file
     )
 
 
 if __name__ == "__main__":
-    save_feed_data()
+    import argparse
+    # Setup basic logging for standalone execution
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+    parser = argparse.ArgumentParser(description="Fetch and parse NHK Easy RSS feed.")
+    parser.add_argument(
+        "--days-back",
+        type=int,
+        default=3,
+        help="Number of days back from today to consider articles as 'new' (default: 3)."
+    )
+    parser.add_argument(
+        "--feed-source",
+        type=str,
+        default=None,
+        help="Path to a local RSS file or custom feed URL."
+    )
+    args = parser.parse_args()
+    save_feed_data(days_back=args.days_back, feed_source=args.feed_source)

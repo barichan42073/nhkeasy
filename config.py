@@ -48,6 +48,7 @@ class PipelineConfig:
     verbose: bool = False
     kindle_email: str = os.getenv("KINDLE_EMAIL", "")
     combined_mp3_email: str = os.getenv("COMBINED_MP3_EMAIL", "")
+    feed_source: str | None = None
 
     @property
     def cutoff_date(self) -> datetime:
@@ -86,6 +87,12 @@ def parse_arguments() -> PipelineConfig:
         default=0,
         help="Number of days back from today to consider articles as 'new'. "
         "Set to 0 for today only.",
+    )
+    parser.add_argument(
+        "--feed-source",
+        type=str,
+        default=None,
+        help="Path to a local RSS file or a custom feed URL.",
     )
     parser.add_argument(
         "--model",
@@ -214,4 +221,5 @@ def parse_arguments() -> PipelineConfig:
         smartreader_dir=rss_fetcher_dir / "smartreader",
         use_staged_analysis=args.use_staged_analysis,
         verbose=args.verbose,
+        feed_source=args.feed_source,
     )
