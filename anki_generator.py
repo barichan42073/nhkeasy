@@ -44,6 +44,7 @@ class AnkiPackageConfig:
     model_name: str = "Japanese Custom Template"  # Allow overriding the model name
     field_mappings: dict[str, str] | None = None
     template_prefix: str = "nhkeasy"  # New field to specify template files
+    deck_name: str | None = None  # Optional override for the target deck name
 
 
 def get_anki_model(
@@ -293,11 +294,14 @@ def generate_anki_package(
             notes.append(my_note)
 
     # Construct the nested deck name (e.g., "NHKeasynews::NHK_Easy_Vocabulary")
-    full_deck_name = (
-        f"{config.parent_deck}::{config.package_name}"
-        if config.parent_deck
-        else config.package_name
-    )
+    if config.deck_name:
+        full_deck_name = config.deck_name
+    else:
+        full_deck_name = (
+            f"{config.parent_deck}::{config.package_name}"
+            if config.parent_deck
+            else config.package_name
+        )
 
     # Use package_name for the file so the OS doesn't throw an error on the "::" characters
     output_path = config.output_dir / f"{sanitize_filename(config.package_name)}.apkg"

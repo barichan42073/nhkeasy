@@ -80,6 +80,7 @@ def build_daily_anki_package_config(
     return anki_generator.AnkiPackageConfig(
         output_dir=config.anki_output_dir,
         package_name=f"nhkeasy_{datetime.now(timezone.utc).strftime('%Y%m%d')}",
+        deck_name="NHKeasynews",
         max_notes=None,
         model_name="Japanese Custom Template",
         template_prefix="nhkeasy",

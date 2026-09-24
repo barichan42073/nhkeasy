@@ -21,8 +21,13 @@ def test_config_parser_feed_source():
 
 def test_save_feed_data_local_source(tmp_path):
     """Verify that save_feed_data successfully processes entries from a local RSS file source."""
+    # Construct a published date that is 1 day ago to ensure it is always within days_back=5
+    from datetime import timedelta
+    pub_date = datetime.now(timezone.utc) - timedelta(days=1)
+    pub_date_str = pub_date.strftime("%a, %d %b %Y %H:%M:%S +0000")
+
     # Write a simple dummy RSS content
-    dummy_rss_content = """<?xml version="1.0" encoding="utf-8"?>
+    dummy_rss_content = f"""<?xml version="1.0" encoding="utf-8"?>
 <rss version="2.0">
   <channel>
     <title>NHK Easy</title>
@@ -31,8 +36,8 @@ def test_save_feed_data_local_source(tmp_path):
     <item>
       <title>Test Article 1</title>
       <link>https://nhkeasier.com/story/1</link>
-      <published>Fri, 18 Sep 2026 20:15:00 +0900</published>
-      <summary>&lt;img src="https://nhkeasier.com/img1.jpg"/&gt;&lt;p&gt;Summary test&lt;/p&gt;</summary>
+      <published>{pub_date_str}</published>
+      <summary>&lt;img src="https://nhkeasier.com/img1.jpg"/&gt;&lt;p&gt;Summary test&lt;/p></summary>
     </item>
   </channel>
 </rss>
@@ -42,9 +47,7 @@ def test_save_feed_data_local_source(tmp_path):
 
     output_json = tmp_path / "test_articles.json"
 
-    # Call save_feed_data with days_back set large enough to include Sep 18, 2026
-    # Note: Because the current system date in our environment is Tuesday, Sep 22, 2026,
-    # days_back=5 is sufficient to include Sep 18, 2026.
+    # Call save_feed_data with days_back set large enough to include the test date
     fetch_rss.save_feed_data(days_back=5, feed_source=rss_file, output_file=output_json)
 
     assert output_json.is_file()

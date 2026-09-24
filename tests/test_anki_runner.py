@@ -245,3 +245,65 @@ def test_generate_and_deliver_happy_path_with_send():
     fake_anki_web_manager.import_and_sync.assert_called_once_with(
         str(fake_package_path), with_scheduling=False
     )
+
+
+# ---------------------------------------------------------------------------
+# Flat Deck Structure Tests
+# ---------------------------------------------------------------------------
+
+def test_build_daily_anki_package_config_sets_flat_deck_name():
+    from anki_pipeline import build_daily_anki_package_config
+
+    config = Mock(anki_output_dir=Path("/tmp/anki_out"))
+    anki_config = build_daily_anki_package_config(config)
+
+    assert anki_config.deck_name == "NHKeasynews"
+    assert anki_config.package_name.startswith("nhkeasy_")
+
+
+def test_anki_generator_respects_deck_name_override():
+    import anki_generator
+    from anki_generator import AnkiPackageConfig, generate_anki_package
+
+    config = AnkiPackageConfig(
+        output_dir=Path("/tmp"),
+        package_name="test_pkg",
+        deck_name="MyCustomOverriddenDeck",
+    )
+
+    vocabulary_list = [{"word": "test_word", "reading": "test_reading", "definition": "test_def"}]
+
+    with patch("anki_generator.get_anki_model") as mock_model, \
+         patch("anki_generator._create_anki_note_from_mapped_data") as mock_note, \
+         patch("anki_generator.build_generic_anki_package") as mock_build:
+        
+        mock_note.return_value = MagicMock()
+        generate_anki_package(vocabulary_list, config)
+
+        mock_build.assert_called_once()
+        called_args, called_kwargs = mock_build.call_args
+        assert called_args[1] == "MyCustomOverriddenDeck"
+
+
+def test_anki_generator_falls_back_to_nested_deck_when_no_override():
+    import anki_generator
+    from anki_generator import AnkiPackageConfig, generate_anki_package
+
+    config = AnkiPackageConfig(
+        output_dir=Path("/tmp"),
+        package_name="test_pkg",
+        parent_deck="MyParentDeck",
+    )
+
+    vocabulary_list = [{"word": "test_word", "reading": "test_reading", "definition": "test_def"}]
+
+    with patch("anki_generator.get_anki_model") as mock_model, \
+         patch("anki_generator._create_anki_note_from_mapped_data") as mock_note, \
+         patch("anki_generator.build_generic_anki_package") as mock_build:
+        
+        mock_note.return_value = MagicMock()
+        generate_anki_package(vocabulary_list, config)
+
+        mock_build.assert_called_once()
+        called_args, called_kwargs = mock_build.call_args
+        assert called_args[1] == "MyParentDeck::test_pkg"
