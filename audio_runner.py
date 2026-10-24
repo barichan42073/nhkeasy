@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 # 1. Update sys.path FIRST before importing local/third-party libs
-AVLIB_PATH = Path(__file__).resolve().parent.parent / "avlib" / "avlib"
+AVLIB_PATH = Path(__file__).resolve().parent / "avlib" / "avlib"
 if str(AVLIB_PATH) not in sys.path:
     sys.path.insert(0, str(AVLIB_PATH))
 

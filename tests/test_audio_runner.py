@@ -319,3 +319,10 @@ def test_deliver_combined_audio_no_send_to_kindle_module(caplog):
         asyncio.run(audio_runner.deliver_combined_audio(combined_audio_path, config))
 
     assert "send_to_kindle module is not available" in caplog.text
+
+
+def test_avlib_path_resolution():
+    expected_path = Path(audio_runner.__file__).resolve().parent / "avlib" / "avlib"
+    assert audio_runner.AVLIB_PATH == expected_path
+    assert audio_runner.AVLIB_PATH.is_dir()
+

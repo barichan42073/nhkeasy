@@ -1,0 +1,11 @@
+[project]
+name = "avlib"
+version = "0.1.0"
+dependencies = [
+    "pydub",
+    "pysbd",
+    "groq",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]

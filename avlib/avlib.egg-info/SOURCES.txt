@@ -1,0 +1,8 @@
+pyproject.toml
+avlib/__init__.py
+avlib/slowrecord.py
+avlib.egg-info/PKG-INFO
+avlib.egg-info/SOURCES.txt
+avlib.egg-info/dependency_links.txt
+avlib.egg-info/requires.txt
+avlib.egg-info/top_level.txt
