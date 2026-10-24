@@ -18,7 +18,8 @@ class PipelineConfig:
     Configuration parameters for the NHK Easy News processing pipeline.
     """
 
-    rss_fetcher_dir: Path
+    nhkeasy_dir: Path
+    feed_dir: Path
     articles_json: Path
     processed_history_json: Path
     unique_vocab_json: Path
@@ -40,6 +41,7 @@ class PipelineConfig:
     anki_output_dir: Path
     send_anki_to_app: bool
     no_kindle: bool
+    rss_fetcher_dir: Path | None = None
     generate_html: bool = True
     html_template_path: Path = Path("template.html")
     html_output_dir: Path = Path("html_output")
@@ -65,7 +67,10 @@ class PipelineConfig:
 
     def __post_init__(self):
         """Ensure all necessary directories exist after initialization."""
-        self.rss_fetcher_dir.mkdir(parents=True, exist_ok=True)
+        if self.rss_fetcher_dir is None:
+            self.rss_fetcher_dir = self.nhkeasy_dir
+        self.nhkeasy_dir.mkdir(parents=True, exist_ok=True)
+        self.feed_dir.mkdir(parents=True, exist_ok=True)
         self.staging_dir.mkdir(parents=True, exist_ok=True)
         self.epubs_dir.mkdir(parents=True, exist_ok=True)
         self.audio_dir.mkdir(parents=True, exist_ok=True)
@@ -181,23 +186,25 @@ def parse_arguments() -> PipelineConfig:
     )
     args = parser.parse_args()
 
-    rss_fetcher_dir = Path.home() / ".local" / "share" / "rss_fetcher"
-    epubs_dir = rss_fetcher_dir / "epubs"
+    nhkeasy_dir = Path.home() / ".local" / "share" / "nhkeasy"
+    feed_dir = nhkeasy_dir / "feed"
+    epubs_dir = nhkeasy_dir / "epubs"
 
     if args.anki_output_dir is None:
         args.anki_output_dir = epubs_dir
 
     return PipelineConfig(
-        rss_fetcher_dir=rss_fetcher_dir,
-        articles_json=rss_fetcher_dir / "articles.json",
-        processed_history_json=rss_fetcher_dir / "processed_history.json",
-        unique_vocab_json=rss_fetcher_dir / "vocabulary" / "unique_vocab.json",
-        staging_dir=rss_fetcher_dir / "staging",
+        nhkeasy_dir=nhkeasy_dir,
+        feed_dir=feed_dir,
+        articles_json=feed_dir / "articles.json",
+        processed_history_json=feed_dir / "processed_history.json",
+        unique_vocab_json=nhkeasy_dir / "vocabulary" / "unique_vocab.json",
+        staging_dir=nhkeasy_dir / "staging",
         epubs_dir=epubs_dir,
-        audio_dir=rss_fetcher_dir / "audio",
-        slow_audio_dir=rss_fetcher_dir / "slow_audio",
-        combined_audio_path=rss_fetcher_dir / "combined_slowed.mp3",
-        vocab_dir=rss_fetcher_dir / "vocabulary",
+        audio_dir=nhkeasy_dir / "audio",
+        slow_audio_dir=nhkeasy_dir / "slow_audio",
+        combined_audio_path=nhkeasy_dir / "combined_slowed.mp3",
+        vocab_dir=nhkeasy_dir / "vocabulary",
         anki_local_db_path=Path(
             os.getenv(
                 "ANKI_LOCAL_DATA",
@@ -217,8 +224,8 @@ def parse_arguments() -> PipelineConfig:
         no_kindle=args.no_kindle,
         generate_html=args.generate_html,
         html_template_path=args.html_template,
-        html_output_dir=rss_fetcher_dir / "html_output",
-        smartreader_dir=rss_fetcher_dir / "smartreader",
+        html_output_dir=nhkeasy_dir / "html_output",
+        smartreader_dir=nhkeasy_dir / "smartreader",
         use_staged_analysis=args.use_staged_analysis,
         verbose=args.verbose,
         feed_source=args.feed_source,

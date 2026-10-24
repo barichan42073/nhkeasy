@@ -7,9 +7,9 @@ set -euo pipefail
 # Define the file paths. It's crucial to double-quote paths, especially those with
 # spaces, special characters, or non-ASCII characters, to prevent word splitting
 # and globbing issues.
-FILE1="/home/nev/.local/share/rss_fetcher/processed_history.json"
-FILE2="/home/nev/.local/share/rss_fetcher/articles.json"
-FILE3="/home/nev/.local/share/rss_fetcher/smartreader/7日ごろまで_雨が続きそう_気をつけてください_https___nhkeasier.com_story_9932_.html"
+FILE1="/home/nev/.local/share/nhkeasy/feed/processed_history.json"
+FILE2="/home/nev/.local/share/nhkeasy/feed/articles.json"
+FILE3="/home/nev/.local/share/nhkeasy/smartreader/7日ごろまで_雨が続きそう_気をつけてください_https___nhkeasier.com_story_9932_.html"
 
 echo "Starting deletion process for specified RSS fetcher files..."
 

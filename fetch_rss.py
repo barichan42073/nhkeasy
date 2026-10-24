@@ -11,7 +11,7 @@ from dateutil import parser as date_parser
 logger = logging.getLogger(__name__)
 
 # Define local file storage path (relative to home directory for portability)
-OUTPUT_DIR = Path.home() / ".local" / "share" / "rss_fetcher"
+OUTPUT_DIR = Path.home() / ".local" / "share" / "nhkeasy" / "feed"
 OUTPUT_FILE = OUTPUT_DIR / "articles.json"
 
 FEED_URL = "https://nhkeasier.com/feed/"  # Or your target RSS feed URL

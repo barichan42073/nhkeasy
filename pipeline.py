@@ -159,7 +159,11 @@ async def main():
     config = parse_arguments()
 
     # Call fetch_rss to ensure articles.json is up-to-date
-    fetch_rss.save_feed_data(days_back=config.days_back, feed_source=config.feed_source)
+    fetch_rss.save_feed_data(
+        days_back=config.days_back,
+        feed_source=config.feed_source,
+        output_file=config.articles_json,
+    )
 
     # Ensure unique_vocab.json is valid before any Anki operations that might load it
     article_manager.ensure_valid_unique_vocab_json(config.unique_vocab_json)

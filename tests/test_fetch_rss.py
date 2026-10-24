@@ -19,6 +19,41 @@ def test_config_parser_feed_source():
         assert config.days_back == 5
 
 
+def test_nhkeasy_destination_paths():
+    """Verify that the primary base destination is ~/.local/share/nhkeasy and feed directory is used."""
+    test_args = ["pipeline.py"]
+    with patch.object(sys, "argv", test_args):
+        config = parse_arguments()
+
+    expected_base = Path.home() / ".local" / "share" / "nhkeasy"
+    expected_feed = expected_base / "feed"
+
+    assert config.nhkeasy_dir == expected_base
+    assert config.feed_dir == expected_feed
+    assert config.articles_json == expected_feed / "articles.json"
+    assert config.processed_history_json == expected_feed / "processed_history.json"
+    assert config.epubs_dir == expected_base / "epubs"
+    assert config.audio_dir == expected_base / "audio"
+    assert config.slow_audio_dir == expected_base / "slow_audio"
+    assert config.vocab_dir == expected_base / "vocabulary"
+    assert config.html_output_dir == expected_base / "html_output"
+    assert config.smartreader_dir == expected_base / "smartreader"
+    assert config.rss_fetcher_dir == expected_base
+
+    assert fetch_rss.OUTPUT_DIR == expected_feed
+    assert fetch_rss.OUTPUT_FILE == expected_feed / "articles.json"
+
+    # Verify all expected directories exist
+    assert expected_base.is_dir()
+    assert expected_feed.is_dir()
+    assert config.epubs_dir.is_dir()
+    assert config.audio_dir.is_dir()
+    assert config.slow_audio_dir.is_dir()
+    assert config.vocab_dir.is_dir()
+    assert config.html_output_dir.is_dir()
+    assert config.smartreader_dir.is_dir()
+
+
 def test_save_feed_data_local_source(tmp_path):
     """Verify that save_feed_data successfully processes entries from a local RSS file source."""
     # Construct a published date that is 1 day ago to ensure it is always within days_back=5
