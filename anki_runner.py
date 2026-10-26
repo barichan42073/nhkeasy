@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 # changes never require touching pipeline.py.
 # ---------------------------------------------------------------------------
 
-PYLIBS_PATH = Path("/home/nev/pylibs")
+PYLIBS_PATH = Path(__file__).parent / "pylibs"
 if str(PYLIBS_PATH) not in sys.path:
     sys.path.insert(0, str(PYLIBS_PATH))
 

@@ -38,6 +38,7 @@ def test_nhkeasy_destination_paths():
     assert config.vocab_dir == expected_base / "vocabulary"
     assert config.html_output_dir == expected_base / "html_output"
     assert config.smartreader_dir == expected_base / "smartreader"
+    assert config.index_html_path == expected_base / "index.html"
     assert config.rss_fetcher_dir == expected_base
 
     assert fetch_rss.OUTPUT_DIR == expected_feed

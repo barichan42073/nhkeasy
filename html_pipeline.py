@@ -99,7 +99,7 @@ def build_article_html_payload(
             "id": article_id,
             "title": article_title,
             "date": article_pub_date.isoformat(),
-            "relative_path": html_filename,
+            "relative_path": f"html_output/{html_filename}",
             "image_url": article_image_url,
             "kicker": analysis.kicker,
         }
@@ -155,12 +155,28 @@ def compute_index_render_data(
         if "id" in item and "date" in item:
             item = dict(item)
             item["date_obj"] = datetime.fromisoformat(item["date"])
+            rel_path = item.get("relative_path", "")
+            if (
+                rel_path
+                and not rel_path.startswith("html_output/")
+                and not rel_path.startswith("http://")
+                and not rel_path.startswith("https://")
+            ):
+                item["relative_path"] = f"html_output/{rel_path}"
             all_articles_metadata[item["id"]] = item
 
     for article_meta in articles_from_current_run:
         article_meta = dict(article_meta)
         article_meta["date_obj"] = datetime.fromisoformat(article_meta["date"])
         article_meta["new"] = article_meta["id"] in newly_processed_article_ids
+        rel_path = article_meta.get("relative_path", "")
+        if (
+            rel_path
+            and not rel_path.startswith("html_output/")
+            and not rel_path.startswith("http://")
+            and not rel_path.startswith("https://")
+        ):
+            article_meta["relative_path"] = f"html_output/{rel_path}"
         all_articles_metadata[article_meta["id"]] = article_meta
 
     sorted_all_articles = sorted(

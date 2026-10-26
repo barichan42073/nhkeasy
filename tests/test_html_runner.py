@@ -5,7 +5,9 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import html_runner
+from article_schema import ArticleAnalysis
 from html_pipeline import ArticleHtmlPayload
+from web_builder import render_interactive_page
 
 
 # ---------------------------------------------------------------------------
@@ -52,6 +54,27 @@ def test_copy_styles_css_success(tmp_path, monkeypatch):
     dest = output_dir / "styles.css"
     assert dest.is_file()
     assert dest.read_text(encoding="utf-8") == "body { color: red; }"
+
+
+def test_copy_styles_css_with_nhkeasy_dir(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    source = tmp_path / "styles.css"
+    source.write_text("body { color: blue; }", encoding="utf-8")
+
+    nhkeasy_dir = tmp_path / "nhkeasy"
+    nhkeasy_dir.mkdir()
+    output_dir = nhkeasy_dir / "html_output"
+    output_dir.mkdir()
+    config = SimpleNamespace(nhkeasy_dir=nhkeasy_dir, html_output_dir=output_dir)
+
+    html_runner._copy_styles_css(config)
+
+    dest_output = output_dir / "styles.css"
+    dest_nhkeasy = nhkeasy_dir / "styles.css"
+    assert dest_output.is_file()
+    assert dest_nhkeasy.is_file()
+    assert dest_output.read_text(encoding="utf-8") == "body { color: blue; }"
+    assert dest_nhkeasy.read_text(encoding="utf-8") == "body { color: blue; }"
 
 
 def test_copy_styles_css_missing_source(tmp_path, monkeypatch):
@@ -289,6 +312,45 @@ def _fake_render_data(manifest_for_save=None):
 
 
 def test_write_smartreader_index_full_flow(tmp_path, monkeypatch):
+    nhkeasy_dir = tmp_path / "nhkeasy"
+    nhkeasy_dir.mkdir()
+    output_dir = nhkeasy_dir / "html_output"
+    output_dir.mkdir()
+    config = SimpleNamespace(nhkeasy_dir=nhkeasy_dir, html_output_dir=output_dir)
+
+    monkeypatch.setattr(html_runner, "_copy_styles_css", lambda cfg: None)
+
+    manifest_data = [
+        {"id": "abc", "title": "Test Article", "date": "2024-06-15T00:00:00+00:00"}
+    ]
+    monkeypatch.setattr(
+        html_runner,
+        "compute_index_render_data",
+        lambda **kwargs: _fake_render_data(manifest_data),
+    )
+
+    asyncio.run(
+        html_runner.write_smartreader_index(
+            config=config,
+            newly_processed_article_ids=set(),
+            articles_from_current_run=[],
+        )
+    )
+
+    index_path = nhkeasy_dir / "index.html"
+    assert index_path.is_file()
+    assert not (output_dir / "index.html").exists()
+    content = index_path.read_text(encoding="utf-8")
+    assert "6月15日（土）" in content
+    assert "2024年6月15日（土）" in content
+
+    manifest_path = output_dir / "manifest.json"
+    assert manifest_path.is_file()
+    saved_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert saved_manifest == manifest_data
+
+
+def test_write_smartreader_index_fallback_without_nhkeasy_dir(tmp_path, monkeypatch):
     output_dir = tmp_path / "output"
     output_dir.mkdir()
     config = SimpleNamespace(html_output_dir=output_dir)
@@ -314,20 +376,14 @@ def test_write_smartreader_index_full_flow(tmp_path, monkeypatch):
 
     index_path = output_dir / "index.html"
     assert index_path.is_file()
-    content = index_path.read_text(encoding="utf-8")
-    assert "6月15日（土）" in content
-    assert "2024年6月15日（土）" in content
-
-    manifest_path = output_dir / "manifest.json"
-    assert manifest_path.is_file()
-    saved_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    assert saved_manifest == manifest_data
 
 
 def test_write_smartreader_index_template_load_failure(tmp_path, monkeypatch):
-    output_dir = tmp_path / "output"
+    nhkeasy_dir = tmp_path / "nhkeasy"
+    nhkeasy_dir.mkdir()
+    output_dir = nhkeasy_dir / "html_output"
     output_dir.mkdir()
-    config = SimpleNamespace(html_output_dir=output_dir)
+    config = SimpleNamespace(nhkeasy_dir=nhkeasy_dir, html_output_dir=output_dir)
 
     monkeypatch.setattr(html_runner, "_copy_styles_css", lambda cfg: None)
     monkeypatch.setattr(
@@ -350,6 +406,7 @@ def test_write_smartreader_index_template_load_failure(tmp_path, monkeypatch):
     )
 
     # Template loading failure should abort before writing anything.
+    assert not (nhkeasy_dir / "index.html").exists()
     assert not (output_dir / "index.html").exists()
     assert not (output_dir / "manifest.json").exists()
 
@@ -357,9 +414,11 @@ def test_write_smartreader_index_template_load_failure(tmp_path, monkeypatch):
 def test_write_smartreader_index_write_error_still_saves_manifest(
     tmp_path, monkeypatch
 ):
-    output_dir = tmp_path / "output"
+    nhkeasy_dir = tmp_path / "nhkeasy"
+    nhkeasy_dir.mkdir()
+    output_dir = nhkeasy_dir / "html_output"
     output_dir.mkdir()
-    config = SimpleNamespace(html_output_dir=output_dir)
+    config = SimpleNamespace(nhkeasy_dir=nhkeasy_dir, html_output_dir=output_dir)
 
     monkeypatch.setattr(html_runner, "_copy_styles_css", lambda cfg: None)
 
@@ -388,6 +447,7 @@ def test_write_smartreader_index_write_error_still_saves_manifest(
     )
 
     # index.html write failed...
+    assert not (nhkeasy_dir / "index.html").exists()
     assert not (output_dir / "index.html").exists()
 
     # ...but the manifest should still be persisted (uses plain open(), not
@@ -405,9 +465,11 @@ def test_write_smartreader_index_integration_with_real_pipeline(tmp_path, monkey
     newly-processed article metadata, render both into the index page, and
     persist the merged manifest back to disk.
     """
-    output_dir = tmp_path / "output"
+    nhkeasy_dir = tmp_path / "nhkeasy"
+    nhkeasy_dir.mkdir()
+    output_dir = nhkeasy_dir / "html_output"
     output_dir.mkdir()
-    config = SimpleNamespace(html_output_dir=output_dir)
+    config = SimpleNamespace(nhkeasy_dir=nhkeasy_dir, html_output_dir=output_dir)
 
     monkeypatch.setattr(html_runner, "_copy_styles_css", lambda cfg: None)
 
@@ -451,13 +513,31 @@ def test_write_smartreader_index_integration_with_real_pipeline(tmp_path, monkey
         )
     )
 
-    index_path = output_dir / "index.html"
+    index_path = nhkeasy_dir / "index.html"
     assert index_path.is_file()
+    assert not (output_dir / "index.html").exists()
     rendered = index_path.read_text(encoding="utf-8")
     assert "New Article" in rendered
     assert "Old Article" in rendered
+    assert 'href="html_output/new-1.html"' in rendered
+    assert 'href="html_output/old-1.html"' in rendered
 
     manifest_path = output_dir / "manifest.json"
     saved_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     saved_ids = {item["id"] for item in saved_manifest}
     assert saved_ids == {"old-1", "new-1"}
+
+
+def test_render_interactive_page_back_link_points_to_parent_index():
+    analysis = ArticleAnalysis(
+        title_ja="テスト記事",
+        title_en="Test Article",
+        kicker="Kicker",
+        sentences=[],
+        side_vocab=[],
+    )
+    rendered = render_interactive_page(
+        raw_html="<article lang='ja'><p>テスト</p></article>",
+        analysis=analysis,
+    )
+    assert '<a href="../index.html">Back to Articles Index</a>' in rendered

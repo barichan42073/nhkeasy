@@ -65,6 +65,11 @@ class PipelineConfig:
         """Helper property for Kindle sending status."""
         return not self.no_kindle
 
+    @property
+    def index_html_path(self) -> Path:
+        """Path to the generated index.html file in the top-level nhkeasy directory."""
+        return self.nhkeasy_dir / "index.html"
+
     def __post_init__(self):
         """Ensure all necessary directories exist after initialization."""
         if self.rss_fetcher_dir is None:

@@ -57,17 +57,22 @@ def _format_japanese_dates(current_date: datetime) -> tuple[str, str]:
 
 
 def _copy_styles_css(config: PipelineConfig) -> None:
-    """Copies the project's styles.css into the HTML output directory."""
+    """Copies the project's styles.css into the HTML output and top-level directories."""
     source_css = Path("styles.css")
     if not source_css.is_file():
         logger.warning("styles.css not found at %s; skipping copy.", source_css)
         return
 
-    destination_css = config.html_output_dir / _STYLES_FILENAME
-    try:
-        shutil.copyfile(source_css, destination_css)
-    except OSError:
-        logger.exception("Failed to copy styles.css to %s", destination_css)
+    destinations = [config.html_output_dir / _STYLES_FILENAME]
+    top_dir = getattr(config, "nhkeasy_dir", None)
+    if top_dir and top_dir != config.html_output_dir:
+        destinations.append(top_dir / _STYLES_FILENAME)
+
+    for destination_css in destinations:
+        try:
+            shutil.copyfile(source_css, destination_css)
+        except OSError:
+            logger.exception("Failed to copy styles.css to %s", destination_css)
 
 
 def _load_manifest(config: PipelineConfig) -> list[dict]:
@@ -175,7 +180,12 @@ async def write_smartreader_index(
 
     rendered_html = template.render(**render_data["template_data"])
 
-    index_path = config.html_output_dir / "index.html"
+    index_path = getattr(config, "index_html_path", None)
+    if index_path is None:
+        index_dir = getattr(config, "nhkeasy_dir", None) or getattr(
+            config, "html_output_dir"
+        )
+        index_path = index_dir / "index.html"
     try:
         index_path.write_text(rendered_html, encoding="utf-8")
         logger.info("Wrote index page -> %s", index_path)
