@@ -20,7 +20,7 @@ async def get_article_analysis(
     analysis_json_path: Path,
     use_staged_analysis: bool,
     article_title: str,
-    model_name: str = "gemini-2.5-flash",
+    model_name: str = "gemini-3.8-flash",
 ) -> ArticleAnalysis:
     """
     Returns an ArticleAnalysis for the given article text.
@@ -69,7 +69,7 @@ async def get_article_analysis(
 
 
 async def analyze_article_with_gemini(
-    article_text: str, model_name: str = "gemini-2.5-flash"
+    article_text: str, model_name: str = "gemini-3.8-flash"
 ) -> ArticleAnalysis:
     """Calls the Gemini API to produce a structured ArticleAnalysis for the article text."""
     load_dotenv()

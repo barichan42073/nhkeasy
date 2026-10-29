@@ -4,28 +4,34 @@ import smtplib
 import sys
 from pathlib import Path
 
+# Initialize logger early so it's available for import guards and functions
+logger = logging.getLogger(__name__)
+
 # 1. Update sys.path FIRST before importing local/third-party libs
 AVLIB_PATH = Path(__file__).resolve().parent / "avlib" / "avlib"
 if str(AVLIB_PATH) not in sys.path:
     sys.path.insert(0, str(AVLIB_PATH))
 
-# 2. Guard pydub import with a fallback exception class
+# Define a local fallback exception class so it always exists
+class PydubError(Exception):
+    """Fallback exception when pydub operations fail."""
+    pass
+
+# 2. Guard pydub import safely
 try:
     from pydub import AudioSegment
-    from pydub.exceptions import PydubError
-except ImportError:
+    # Force the absolute path so pydub never has to guess
+    AudioSegment.converter = "/usr/bin/ffmpeg"
+    AudioSegment.ffprobe = "/usr/bin/ffprobe"
+except Exception as e:
     AudioSegment = None
-
-    class PydubError(Exception):
-        """Fallback exception when pydub is not installed."""
-        pass
+    logger.warning(f"Could not initialize pydub AudioSegment: {e}")
 
 import requests
 
 try:
     import slowrecord
 except ImportError:
-    logger = logging.getLogger(__name__)
     logger.error("Could not import slowrecord.")
     slowrecord = None
 
@@ -38,8 +44,6 @@ except ImportError:
 
 from config import PipelineConfig
 from utils import download_mp3
-
-logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Imperative Shell: optional dependency / environment wiring specific to the
