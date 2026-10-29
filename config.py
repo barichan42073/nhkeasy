@@ -106,9 +106,9 @@ def parse_arguments() -> PipelineConfig:
     )
     parser.add_argument(
         "--model",
-        default="gemini-2.5-flash",
+        default="gemini-3.8-flash",
         dest="model_name",
-        help="Specify the Gemini model to use (default: gemini-2.5-flash).",
+        help="Specify the Gemini model to use (default: gemini-3.8-flash).",
     )
     parser.add_argument(
         "--keep-md",
