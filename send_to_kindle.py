@@ -1,107 +1,106 @@
 import os
-import subprocess
+import smtplib
+from email.message import EmailMessage
 from pathlib import Path
 import logging
 import sys
 import argparse
-from dotenv import load_dotenv
+import uuid
+from email.utils import make_msgid, formatdate
 
-load_dotenv() # Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
-# Setup logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
+    handlers=[logging.StreamHandler(sys.stdout)]
 )
 logger = logging.getLogger(__name__)
 
-def _load_kindle_email() -> str | None:
-    """Loads KINDLE_EMAIL from environment variables."""
-    kindle_email = os.getenv('KINDLE_EMAIL')
-    if not kindle_email:
-        logger.error("KINDLE_EMAIL environment variable not set.")
-        return None
-    return kindle_email
-
 def send_epub_to_kindle(epub_path: Path, kindle_email: str = None) -> bool:
-    """
-    Sends an EPUB file to a Kindle device using the mutt command-line tool.
+    if not isinstance(epub_path, Path):
+        epub_path = Path(epub_path)
 
-    Args:
-        epub_path: The path to the EPUB file to send.
-        kindle_email: Optional. The recipient Kindle email address. If not provided,
-                      it will be loaded from the KINDLE_EMAIL environment variable.
-
-    Returns:
-        True if the email was sent successfully, False otherwise.
-    """
     if not epub_path.exists():
         logger.error(f"EPUB file not found: {epub_path}")
         return False
 
     if not kindle_email:
-        kindle_email = _load_kindle_email()
+        kindle_email = os.getenv('KINDLE_EMAIL')
         if not kindle_email:
+            logger.error("KINDLE_EMAIL environment variable not set.")
             return False
 
-    logger.info(f"Attempting to send '{epub_path.name}' to Kindle email: {kindle_email} using mutt.")
+    smtp_server = os.getenv('SMTP_SERVER')
+    smtp_port_str = os.getenv('SMTP_PORT', '587')
+    smtp_username = os.getenv('SMTP_USERNAME') or os.getenv('SMTP_USER')
+    smtp_password = os.getenv('SMTP_PASSWORD')
+    sender_email = os.getenv('SENDER_EMAIL') or smtp_username
 
-    # mutt command to send an email with an attachment
-    # -s "Subject" : sets the subject of the email
-    # -a <file>    : attaches the specified file
-    # -- <recipient> : separates mutt options from the recipient address
-    command = [
-        "mutt",
-        "-s", "NHK Easy Article", # Subject for Kindle to convert
-        "-e", "set copy=no", # Prevent mutt from trying to save a copy in non-interactive mode
-        "-a", str(epub_path),
-        "--",
-        kindle_email
-    ]
+    if not smtp_server or not smtp_username or not smtp_password:
+        logger.error("SMTP configuration or credentials missing.")
+        return False
 
     try:
-        # Execute the mutt command
-        result = subprocess.run(command, check=True, capture_output=True, text=True, stdin=subprocess.DEVNULL)
-        logger.info(f"Successfully sent '{epub_path.name}' to Kindle.")
-        logger.debug(f"Mutt stdout: {result.stdout.strip()}")
-        return True
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Mutt command failed with exit code {e.returncode} for '{epub_path.name}'.")
-        logger.error(f"Mutt stdout: {e.stdout.strip()}")
-        logger.error(f"Mutt stderr: {e.stderr.strip()}")
-    except FileNotFoundError:
-        logger.error("Mutt command not found. Please ensure mutt is installed and in your PATH.")
+        smtp_port = int(smtp_port_str)
+    except ValueError:
+        logger.error(f"Invalid SMTP_PORT: '{smtp_port_str}'")
+        return False
+
+    logger.info(f"Preparing to send '{epub_path.name}' to Kindle: {kindle_email}")
+
+    # Create message with strict RFC headers required by strict gateways
+    msg = EmailMessage()
+    msg['Subject'] = 'NHK Easy Article'
+    msg['From'] = sender_email
+    msg['To'] = kindle_email
+    msg['Date'] = formatdate(localtime=True)
+    msg['Message-ID'] = make_msgid()
+    msg['X-Mailer'] = 'Mutt/2.2.9'  # Mimic mutt's exact successful agent signature
+
+    # Kindle personal documents do not need a body text message; 
+    # sending a clean attachment-only structure prevents parsing blocks.
+    try:
+        with open(epub_path, 'rb') as f:
+            file_data = f.read()
+        
+        msg.add_attachment(
+            file_data,
+            maintype='application',
+            subtype='epub+zip',
+            filename=epub_path.name
+        )
     except Exception as e:
-        logger.error(f"An unexpected error occurred while sending email via mutt: {e}", exc_info=True)
-    
-    return False
+        logger.error(f"Failed to read EPUB file: {e}")
+        return False
+
+    try:
+        if smtp_port == 465:
+            with smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=30) as server:
+                server.login(smtp_username, smtp_password)
+                server.send_message(msg)
+        else:
+            with smtplib.SMTP(smtp_server, smtp_port, timeout=30) as server:
+                server.starttls()
+                server.login(smtp_username, smtp_password)
+                server.send_message(msg)
+
+        logger.info(f"Successfully delivered '{epub_path.name}' payload to SMTP relay.")
+        return True
+    except Exception as e:
+        logger.error(f"SMTP transmission failed: {e}", exc_info=True)
+        return False
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Send an EPUB file to a Kindle device via email using mutt."
-    )
-    parser.add_argument(
-        "epub_file",
-        type=Path,
-        help="Path to the EPUB file to send."
-    )
-    parser.add_argument(
-        "--kindle-email",
-        type=str,
-        help="Recipient Kindle email address. Overrides KINDLE_EMAIL environment variable."
-    )
+    parser = argparse.ArgumentParser(description="Send EPUB to Kindle via smtplib.")
+    parser.add_argument("epub_file", type=Path)
     args = parser.parse_args()
-
-    kindle_email_to_use = args.kindle_email if args.kindle_email else os.getenv('KINDLE_EMAIL')
-
-    if not kindle_email_to_use:
-        logger.error("KINDLE_EMAIL is not set in environment or via --kindle-email argument. Cannot proceed.")
-        sys.exit(1)
-
-    if send_epub_to_kindle(args.epub_file, kindle_email=kindle_email_to_use):
-        logger.info(f"Manual send of '{args.epub_file.name}' completed successfully.")
+    
+    if send_epub_to_kindle(args.epub_file):
+        sys.exit(0)
     else:
-        logger.error(f"Manual send of '{args.epub_file.name}' failed.")
+        sys.exit(1)
