@@ -72,7 +72,7 @@ async def analyze_article_with_gemini(
     article_text: str, model_name: str = "gemini-3.8-flash"
 ) -> ArticleAnalysis:
     """Calls the Gemini API to produce a structured ArticleAnalysis for the article text."""
-    load_dotenv()
+    load_dotenv(override=True)
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise ValueError("GEMINI_API_KEY environment variable not set.")
