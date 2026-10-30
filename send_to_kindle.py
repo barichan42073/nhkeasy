@@ -10,7 +10,7 @@ from email.utils import make_msgid, formatdate
 
 try:
     from dotenv import load_dotenv
-    load_dotenv()
+    load_dotenv(override=True)
 except ImportError:
     pass
 
