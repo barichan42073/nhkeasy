@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 import html_runner
 from article_schema import ArticleAnalysis
-from html_pipeline import ArticleHtmlPayload
+from html_pipeline import ArticleHtmlPayload, compute_index_render_data
 from web_builder import render_interactive_page
 
 
@@ -541,3 +541,76 @@ def test_render_interactive_page_back_link_points_to_parent_index():
         analysis=analysis,
     )
     assert '<a href="../index.html">Back to Articles Index</a>' in rendered
+
+
+# ---------------------------------------------------------------------------
+# compute_index_render_data layout rules
+# ---------------------------------------------------------------------------
+
+
+def test_compute_index_render_data_caps_at_4_photo_articles():
+    # 6 articles on the same date: 1 should be lead, 3 should be grid, 2 should be in older_articles_grouped
+    articles = [
+        {
+            "id": f"art-{i}",
+            "title": f"Article {i}",
+            "date": f"2024-06-15T0{i}:00:00+00:00",
+            "relative_path": f"art-{i}.html",
+            "image_url": f"http://img/{i}.jpg",
+            "kicker": "Kicker",
+        }
+        for i in range(6)
+    ]
+    current_date = datetime(2024, 6, 15, tzinfo=timezone.utc)
+
+    result = compute_index_render_data(
+        existing_manifest=articles,
+        articles_from_current_run=[],
+        newly_processed_article_ids=set(),
+        current_date=current_date,
+        current_date_japanese_full="2024年6月15日（土）",
+        current_date_japanese_title="6月15日（土）",
+    )
+
+    template_data = result["template_data"]
+    assert template_data["lead_article"]["id"] == "art-5"
+    assert len(template_data["today_grid_articles"]) == 3
+    assert [a["id"] for a in template_data["today_grid_articles"]] == ["art-4", "art-3", "art-2"]
+
+    # The remaining 2 should be placed in older_articles_grouped
+    older_grouped = template_data["older_articles_grouped"]
+    assert len(older_grouped) == 1
+    assert len(older_grouped[0]["articles"]) == 2
+    assert [a["id"] for a in older_grouped[0]["articles"]] == ["art-1", "art-0"]
+
+
+def test_compute_index_render_data_fewer_than_4_articles():
+    # When there are only 3 articles, 1 is lead, 2 are grid, older_articles_grouped is empty
+    articles = [
+        {
+            "id": f"art-{i}",
+            "title": f"Article {i}",
+            "date": f"2024-06-15T0{i}:00:00+00:00",
+            "relative_path": f"art-{i}.html",
+            "image_url": f"http://img/{i}.jpg",
+            "kicker": "Kicker",
+        }
+        for i in range(3)
+    ]
+    current_date = datetime(2024, 6, 15, tzinfo=timezone.utc)
+
+    result = compute_index_render_data(
+        existing_manifest=articles,
+        articles_from_current_run=[],
+        newly_processed_article_ids=set(),
+        current_date=current_date,
+        current_date_japanese_full="2024年6月15日（土）",
+        current_date_japanese_title="6月15日（土）",
+    )
+
+    template_data = result["template_data"]
+    assert template_data["lead_article"]["id"] == "art-2"
+    assert len(template_data["today_grid_articles"]) == 2
+    assert [a["id"] for a in template_data["today_grid_articles"]] == ["art-1", "art-0"]
+    assert template_data["older_articles_grouped"] == []
+

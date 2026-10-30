@@ -5,7 +5,7 @@ import webbrowser
 from sudachipy import dictionary, tokenizer
 
 # Initialize Sudachi with Mode C
-tokenizer_obj = dictionary.Dictionary().create()
+tokenizer_obj = dictionary.Dictionary().tokenizer()
 mode = tokenizer.Tokenizer.SplitMode.C 
 
 # --- DATA LOADING ---

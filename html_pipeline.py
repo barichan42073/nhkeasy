@@ -187,38 +187,31 @@ def compute_index_render_data(
     today_grid_articles = []
     older_articles_grouped: dict = {}
 
-    if sorted_all_articles:
-        lead_article = sorted_all_articles[0]
-        current_display_date = lead_article["date_obj"].date()
-    else:
-        current_display_date = current_date.date()
-
+    formatted_articles = []
     for article_meta in sorted_all_articles:
         temp_article_data = article_meta.copy()
         temp_article_data["date"] = article_meta["date_obj"]
+        formatted_articles.append(temp_article_data)
 
-        if lead_article is not None and temp_article_data["id"] == lead_article["id"]:
-            lead_article = temp_article_data
-            continue
+    if formatted_articles:
+        lead_article = formatted_articles[0]
+        today_grid_articles = formatted_articles[1:4]
+        remaining_articles = formatted_articles[4:]
+    else:
+        remaining_articles = []
 
-        if temp_article_data["date_obj"].date() == current_display_date:
-            today_grid_articles.append(temp_article_data)
-        else:
-            article_date_key = temp_article_data["date_obj"].date()
-            if article_date_key not in older_articles_grouped:
-                older_articles_grouped[article_date_key] = {
-                    "date_japanese": temp_article_data["date_obj"].strftime(
-                        "%Y年%m月%d日"
-                    ),
-                    "articles": [],
-                }
-            older_articles_grouped[article_date_key]["articles"].append(
-                temp_article_data
-            )
-
-    today_grid_articles = sorted(
-        today_grid_articles, key=lambda x: x["date"], reverse=True
-    )
+    for temp_article_data in remaining_articles:
+        article_date_key = temp_article_data["date_obj"].date()
+        if article_date_key not in older_articles_grouped:
+            older_articles_grouped[article_date_key] = {
+                "date_japanese": temp_article_data["date_obj"].strftime(
+                    "%Y年%m月%d日"
+                ),
+                "articles": [],
+            }
+        older_articles_grouped[article_date_key]["articles"].append(
+            temp_article_data
+        )
 
     older_articles_grouped_list = []
     for date_key in sorted(older_articles_grouped.keys(), reverse=True):
