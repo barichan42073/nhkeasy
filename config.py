@@ -11,6 +11,14 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+# Load .env once, at import time and BEFORE PipelineConfig is defined, because
+# the dataclass defaults below (KINDLE_EMAIL, COMBINED_MP3_EMAIL) read the
+# environment when the class is created. Real environment variables win over
+# .env values (no override=True).
+load_dotenv()
+
 
 @dataclass
 class PipelineConfig:
@@ -31,7 +39,7 @@ class PipelineConfig:
     vocab_dir: Path
     anki_local_db_path: Path
     days_back: int
-    model_name: str
+    model_name: str  # provider-qualified spec, e.g. "gemini/gemini-3.8-flash"
     keep_md: bool
     max_articles: int | None
     no_audio: bool
@@ -51,6 +59,7 @@ class PipelineConfig:
     kindle_email: str = os.getenv("KINDLE_EMAIL", "")
     combined_mp3_email: str = os.getenv("COMBINED_MP3_EMAIL", "")
     feed_source: str | None = None
+    api_key_env: str | None = None  # env var holding the LLM API key
 
     @property
     def cutoff_date(self) -> datetime:
@@ -106,9 +115,18 @@ def parse_arguments() -> PipelineConfig:
     )
     parser.add_argument(
         "--model",
-        default="gemini-3.8-flash",
+        default="gemini/gemini-3.8-flash",
         dest="model_name",
-        help="Specify the Gemini model to use (default: gemini-3.8-flash).",
+        help="LLM to use as <provider>/<model> (providers: gemini, deepseek, "
+        "groq), e.g. deepseek/deepseek-chat "
+        "(default: gemini/gemini-3.8-flash).",
+    )
+    parser.add_argument(
+        "--api-key-env",
+        default=None,
+        help="Name of the environment variable (e.g. from .env) holding the API "
+        "key. Defaults to the provider's usual variable, such as GEMINI_API_KEY "
+        "or DEEPSEEK_API_KEY.",
     )
     parser.add_argument(
         "--keep-md",
@@ -234,4 +252,5 @@ def parse_arguments() -> PipelineConfig:
         use_staged_analysis=args.use_staged_analysis,
         verbose=args.verbose,
         feed_source=args.feed_source,
+        api_key_env=args.api_key_env,
     )

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class VocabItem(BaseModel):
@@ -8,6 +8,12 @@ class VocabItem(BaseModel):
     reading: str = Field(description="Hiragana reading (e.g., ひなんする)")
     definition: str = Field(description="Contextual English definition")
     jlpt_level: str = Field(default="", description="JLPT level if known (e.g., n3)")
+
+    @field_validator("jlpt_level")
+    @classmethod
+    def _normalize_jlpt_level(cls, value: str) -> str:
+        """Providers differ ('N3' vs 'n3'); always store lowercase."""
+        return value.strip().lower()
 
 
 class SentenceTranslation(BaseModel):

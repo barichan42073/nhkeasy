@@ -11,7 +11,7 @@ from jinja2 import Environment, FileSystemLoader
 from markupsafe import Markup
 
 import sudachi  # Import sudachi to use its tokenizer and helper functions
-from article_schema import ArticleAnalysis
+from article_schema import ArticleAnalysis, VocabItem
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +37,45 @@ def _strip_furigana_text(text: str) -> str:
     return re.sub(r"\[.*?\]", "", text)
 
 
+# Hiragana, katakana and the long-vowel mark: what okurigana, suffixes and
+# kana prefixes (お酒, ハチ公) look like.
+_KANA_CHARS = "\u3040-\u309f\u30a0-\u30ffー"
+
+
+def _fallback_vocab_match(
+    base_text: str, vocab_items: list[VocabItem], preceding_text: str = ""
+) -> VocabItem | None:
+    """Model-independent match of NHK ruby text to a vocabulary entry.
+
+    NHK's <ruby> tags cover only the kanji, so for 集まる the DOM text is just
+    '集', and for お酒 it is just '酒'. This finds the single vocab word that
+    either equals the ruby text or is the ruby text with kana added around it:
+
+      * kana after it:   集 -> 集まる, 避難 -> 避難する
+      * kana before it:  酒 -> お酒, 公 -> ハチ公 (only when the text right
+        before the <ruby> tag really ends with that kana, so 酒屋 is not
+        linked to お酒)
+
+    A kanji next to the ruby text rules a word out (警 does not match 警察官).
+    Returns None when nothing matches or when more than one word does (e.g. 出
+    could be 出る or 出す), so an ambiguous word is left unlinked rather than
+    linked to the wrong entry.
+    """
+    exact = [v for v in vocab_items if v.word == base_text]
+    if len(exact) == 1:
+        return exact[0]
+
+    pattern = re.compile(
+        rf"^(?P<prefix>[{_KANA_CHARS}]*){re.escape(base_text)}[{_KANA_CHARS}]*$"
+    )
+    candidates = []
+    for v in vocab_items:
+        match = pattern.match(v.word)
+        if match and preceding_text.endswith(match.group("prefix")):
+            candidates.append(v)
+    return candidates[0] if len(candidates) == 1 else None
+
+
 def _inject_dictionary_attributes(article_body: Tag, analysis: ArticleAnalysis) -> None:
     """Attach dictionary metadata and target classes to <ruby> tags in article DOM."""
     vocab_map = {v.word: v for v in analysis.side_vocab}
@@ -55,6 +94,13 @@ def _inject_dictionary_attributes(article_body: Tag, analysis: ArticleAnalysis) 
 
         dictionary_form = ai_mapping.get(base_text, base_text)
         vocab_item = vocab_map.get(dictionary_form)
+        if vocab_item is None:
+            # Mapping missing, or its base form isn't one of the vocab words.
+            prev = ruby_tag.previous_sibling
+            preceding_text = str(prev) if isinstance(prev, NavigableString) else ""
+            vocab_item = _fallback_vocab_match(
+                base_text, analysis.side_vocab, preceding_text
+            )
 
         if vocab_item:
             ruby_tag["data-dict-word"] = vocab_item.word

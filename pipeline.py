@@ -13,6 +13,7 @@ import audio_runner
 import epub_runner
 import fetch_rss
 import html_runner
+import llm
 from config import PipelineConfig, parse_arguments
 from utils import sanitize_filename
 
@@ -68,6 +69,7 @@ async def _process_single_article(
     config: PipelineConfig,
     state: RunState,
     existing_unique_vocab: dict[str, dict],
+    llm_client: llm.LLMClient,
 ):
     """Processes a single article through all pipeline steps."""
     article_id = article.get("id", article["link"])
@@ -97,6 +99,7 @@ async def _process_single_article(
         analysis_json_path,
         config.use_staged_analysis,
         article_title,
+        llm_client,
     )
 
     _epub_path, article_markdown_content = await epub_runner.process_epub_and_kindle(
@@ -140,6 +143,7 @@ async def _process_all_articles(
     config: PipelineConfig,
     state: RunState,
     existing_unique_vocab: dict[str, dict],
+    llm_client: llm.LLMClient,
 ):
     """Iterates through and processes each article."""
     for article in articles_to_process:
@@ -149,6 +153,7 @@ async def _process_all_articles(
                 config,
                 state,
                 existing_unique_vocab,
+                llm_client,
             )
         except Exception:
             article_title = article.get("title", "Untitled Article")
@@ -157,6 +162,10 @@ async def _process_all_articles(
 
 async def main():
     config = parse_arguments()
+
+    # Build the LLM client once, up front, so a bad --model spec or a missing
+    # API key fails immediately rather than on the first article.
+    llm_client = llm.make_client(config.model_name, config.api_key_env)
 
     # Call fetch_rss to ensure articles.json is up-to-date
     fetch_rss.save_feed_data(
@@ -192,6 +201,7 @@ async def main():
         config,
         state,
         existing_unique_vocab,
+        llm_client,
     )
 
     if config.generate_html:

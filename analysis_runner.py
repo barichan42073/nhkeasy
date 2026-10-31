@@ -1,34 +1,51 @@
 """
 Module for obtaining a structured ArticleAnalysis for an article, either by
-reusing a previously staged analysis JSON file, or by calling the Gemini API.
+reusing a previously staged analysis JSON file, or by calling an LLM through
+the provider-agnostic `LLMClient` interface.
 """
 
 import logging
-import os
 from pathlib import Path
 
-from dotenv import load_dotenv
-from google import genai
-
 from article_schema import ArticleAnalysis
+from llm import LLMClient
 
 logger = logging.getLogger(__name__)
 
 
+def build_analysis_prompt(article_text: str) -> str:
+    """Provider-independent prompt for article analysis."""
+    return (
+        "Analyze the following NHK Easy Japanese news article text.\n"
+        "Extract:\n"
+        "- The Japanese title and its English translation.\n"
+        "- A short, attention-grabbing kicker/subtitle (one concise phrase).\n"
+        "- A sentence-by-sentence breakdown with natural English translations.\n"
+        "- 10-15 key vocabulary items suitable for a side panel and Anki flashcards, "
+        "each with its dictionary form, hiragana reading, contextual English definition, "
+        "and JLPT level if known. Write each dictionary form with the same kanji "
+        "the article text uses (for example 周り, not まわり); use kana only when "
+        "the article itself writes that word in kana.\n"
+        "- A mapping from exact kanji surface stems found inside furigana ruby annotations "
+        "to their dictionary base forms.\n\n"
+        f"Article text:\n{article_text}"
+    )
+
+
 async def get_article_analysis(
-    article_text_for_gemini: str,
+    article_text_for_llm: str,
     analysis_json_path: Path,
     use_staged_analysis: bool,
     article_title: str,
-    model_name: str = "gemini-3.8-flash",
+    llm: LLMClient,
 ) -> ArticleAnalysis:
     """
     Returns an ArticleAnalysis for the given article text.
 
     If `use_staged_analysis` is True and a staged analysis JSON file already
     exists at `analysis_json_path`, it is loaded and returned directly.
-    Otherwise, the Gemini API is called to generate a fresh analysis, which is
-    then saved to `analysis_json_path` for future staged runs.
+    Otherwise the LLM is called to generate a fresh analysis, which is then
+    saved to `analysis_json_path` for future staged runs.
     """
     if use_staged_analysis and analysis_json_path.exists():
         logger.info(
@@ -43,12 +60,23 @@ async def get_article_analysis(
         except Exception:
             logger.exception(
                 "Failed to load staged analysis JSON for '%s' from '%s'. "
-                "Falling back to Gemini API.",
+                "Falling back to the LLM.",
                 article_title,
                 analysis_json_path,
             )
 
-    analysis = await analyze_article_with_gemini(article_text_for_gemini, model_name)
+    try:
+        analysis = await llm.generate_structured(
+            build_analysis_prompt(article_text_for_llm), ArticleAnalysis
+        )
+    except Exception:
+        logger.exception("Error calling LLM for article analysis.")
+        raise
+
+    if not analysis.surface_mapping:
+        logger.warning(
+            "Model returned an empty surface_mapping for '%s'.", article_title
+        )
 
     try:
         analysis_json_path.parent.mkdir(parents=True, exist_ok=True)
@@ -66,58 +94,3 @@ async def get_article_analysis(
         )
 
     return analysis
-
-
-async def analyze_article_with_gemini(
-    article_text: str, model_name: str = "gemini-3.8-flash"
-) -> ArticleAnalysis:
-    """Calls the Gemini API to produce a structured ArticleAnalysis for the article text."""
-    load_dotenv(override=True)
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise ValueError("GEMINI_API_KEY environment variable not set.")
-
-    logger.info("Calling Gemini API with model '%s' to analyze article...", model_name)
-    client = genai.Client(api_key=api_key)
-
-    prompt = (
-        "Analyze the following NHK Easy Japanese news article text.\n"
-        "Extract:\n"
-        "- The Japanese title and its English translation.\n"
-        "- A short, attention-grabbing kicker/subtitle (one concise phrase).\n"
-        "- A sentence-by-sentence breakdown with natural English translations.\n"
-        "- 10-15 key vocabulary items suitable for a side panel and Anki flashcards, "
-        "each with its dictionary form, hiragana reading, contextual English definition, "
-        "and JLPT level if known.\n"
-        "- A mapping from exact kanji surface stems found inside furigana ruby annotations "
-        "to their dictionary base forms.\n\n"
-        f"Article text:\n{article_text}"
-    )
-
-    try:
-        response = client.models.generate_content(
-            model=model_name,
-            contents=prompt,
-            config={
-                "response_mime_type": "application/json",
-                "response_schema": ArticleAnalysis,
-            },
-        )
-
-        if hasattr(response, "usage_metadata") and response.usage_metadata:
-            logger.info(
-                "Gemini analysis token usage: %d total (%d prompt, %d completion).",
-                response.usage_metadata.total_token_count,
-                response.usage_metadata.prompt_token_count,
-                response.usage_metadata.candidates_token_count,
-            )
-        else:
-            logger.debug("Gemini API response did not contain usage metadata.")
-
-        if not response.text:
-            raise ValueError("Gemini API returned an empty response during analysis.")
-
-        return ArticleAnalysis.model_validate_json(response.text)
-    except Exception:
-        logger.exception("Error calling Gemini API for article analysis.")
-        raise

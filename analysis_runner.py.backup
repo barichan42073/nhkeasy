@@ -1,0 +1,94 @@
+"""
+Module for obtaining a structured ArticleAnalysis for an article, either by
+reusing a previously staged analysis JSON file, or by calling an LLM through
+the provider-agnostic `LLMClient` interface.
+"""
+
+import logging
+from pathlib import Path
+
+from article_schema import ArticleAnalysis
+from llm import LLMClient
+
+logger = logging.getLogger(__name__)
+
+
+def build_analysis_prompt(article_text: str) -> str:
+    """Provider-independent prompt for article analysis."""
+    return (
+        "Analyze the following NHK Easy Japanese news article text.\n"
+        "Extract:\n"
+        "- The Japanese title and its English translation.\n"
+        "- A short, attention-grabbing kicker/subtitle (one concise phrase).\n"
+        "- A sentence-by-sentence breakdown with natural English translations.\n"
+        "- 10-15 key vocabulary items suitable for a side panel and Anki flashcards, "
+        "each with its dictionary form, hiragana reading, contextual English definition, "
+        "and JLPT level if known.\n"
+        "- A mapping from exact kanji surface stems found inside furigana ruby annotations "
+        "to their dictionary base forms.\n\n"
+        f"Article text:\n{article_text}"
+    )
+
+
+async def get_article_analysis(
+    article_text_for_llm: str,
+    analysis_json_path: Path,
+    use_staged_analysis: bool,
+    article_title: str,
+    llm: LLMClient,
+) -> ArticleAnalysis:
+    """
+    Returns an ArticleAnalysis for the given article text.
+
+    If `use_staged_analysis` is True and a staged analysis JSON file already
+    exists at `analysis_json_path`, it is loaded and returned directly.
+    Otherwise the LLM is called to generate a fresh analysis, which is then
+    saved to `analysis_json_path` for future staged runs.
+    """
+    if use_staged_analysis and analysis_json_path.exists():
+        logger.info(
+            "Using staged analysis JSON for '%s' from '%s'.",
+            article_title,
+            analysis_json_path,
+        )
+        try:
+            return ArticleAnalysis.model_validate_json(
+                analysis_json_path.read_text(encoding="utf-8")
+            )
+        except Exception:
+            logger.exception(
+                "Failed to load staged analysis JSON for '%s' from '%s'. "
+                "Falling back to the LLM.",
+                article_title,
+                analysis_json_path,
+            )
+
+    try:
+        analysis = await llm.generate_structured(
+            build_analysis_prompt(article_text_for_llm), ArticleAnalysis
+        )
+    except Exception:
+        logger.exception("Error calling LLM for article analysis.")
+        raise
+
+    if not analysis.surface_mapping:
+        logger.warning(
+            "Model returned an empty surface_mapping for '%s'.", article_title
+        )
+
+    try:
+        analysis_json_path.parent.mkdir(parents=True, exist_ok=True)
+        analysis_json_path.write_text(
+            analysis.model_dump_json(indent=2), encoding="utf-8"
+        )
+        logger.debug(
+            "Saved analysis JSON for '%s' to '%s'.", article_title, analysis_json_path
+        )
+    except OSError:
+        logger.exception(
+            "Failed to save analysis JSON for '%s' to '%s'.",
+            article_title,
+            analysis_json_path,
+        )
+
+    return analysis

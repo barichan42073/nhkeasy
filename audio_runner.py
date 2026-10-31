@@ -3,6 +3,7 @@ import os
 import smtplib
 import sys
 from pathlib import Path
+import subprocess
 
 # Initialize logger early so it's available for import guards and functions
 logger = logging.getLogger(__name__)
@@ -108,13 +109,13 @@ async def execute_audio_processing_for_article(
                 "Could not remove temporary audio file %s",
                 task.audio_orig_path.name,
             )
-    except (OSError, requests.RequestException, PydubError):
+    except (OSError, requests.RequestException, PydubError,
+            subprocess.SubprocessError, RuntimeError):
         logger.exception(
             "Audio generation failed for '%s' (ID: %s)",
             task.article_title,
             task.article_id,
         )
-
     if audio_pipeline.should_mark_article_processed_for_audio_only(
         config, audio_processed
     ):
