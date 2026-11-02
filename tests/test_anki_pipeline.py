@@ -1,4 +1,5 @@
-from anki_pipeline import select_daily_vocab, split_known_vocab
+from anki_pipeline import build_article_vocab_items, select_daily_vocab, split_known_vocab
+from article_schema import ArticleAnalysis, VocabItem
 
 
 def _v(word, article="A"):
@@ -53,3 +54,28 @@ def test_split_known_vocab_splits_and_dedupes_in_order():
 
     assert [v["word"] for v in new] == ["x", "n"]
     assert [v["word"] for v in known] == ["k"]
+
+
+def _analysis(words):
+    return ArticleAnalysis(
+        title_ja="t", title_en="t", kicker="k", sentences=[],
+        side_vocab=[
+            VocabItem(word=w, reading="よみ", definition="def", jlpt_level="N3")
+            for w in words
+        ],
+    )
+
+
+def test_build_article_vocab_items_uses_whole_side_vocab_and_tags_article():
+    article = {"id": "id1", "link": "http://x", "title": "記事"}
+    items = build_article_vocab_items(article, _analysis([f"w{i}" for i in range(15)]))
+
+    assert len(items) == 15  # no per-article cap; the daily cap applies later
+    assert items[0] == {
+        "word": "w0", "reading": "よみ", "definition": "def", "jlpt_level": "n3",
+        "article_id": "id1", "article_title": "記事",
+    }
+
+
+def test_build_article_vocab_items_without_analysis():
+    assert build_article_vocab_items({"link": "http://x"}, None) == []

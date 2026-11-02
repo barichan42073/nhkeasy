@@ -19,6 +19,25 @@ from utils import sanitize_filename
 
 logger = logging.getLogger(__name__)
 
+# Third-party loggers that flood the output at DEBUG.
+_NOISY_LOGGERS = ("httpx", "httpcore", "urllib3", "openai", "google_genai", "asyncio")
+
+
+def setup_logging(verbose: bool = False) -> None:
+    """Configures logging once for the whole run. --verbose switches to DEBUG."""
+    logging.basicConfig(
+        level=logging.DEBUG if verbose else logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        handlers=[logging.StreamHandler(sys.stdout)],
+        force=True,
+    )
+    if verbose:
+        # Keep third-party request chatter at INFO (as in a normal run).
+        for name in _NOISY_LOGGERS:
+            logging.getLogger(name).setLevel(logging.INFO)
+        # epub_runner quietens this module to WARNING at import; undo that.
+        logging.getLogger("nhkeasier_to_epub").setLevel(logging.DEBUG)
+
 
 @dataclass
 class RunState:
@@ -68,19 +87,12 @@ async def _process_single_article(
     article: dict,
     config: PipelineConfig,
     state: RunState,
-    existing_unique_vocab: dict[str, dict],
     llm_client: llm.LLMClient,
 ):
     """Processes a single article through all pipeline steps."""
     article_id = article.get("id", article["link"])
     article_title = article.get("title", "Untitled Article")
-    pub_date_str = article.get("published", "N/A")
-    logger.info(
-        "Eligible for processing: '%s' (ID: %s) - published %s.",
-        article_title,
-        article_id,
-        pub_date_str,
-    )
+    logger.info("Processing '%s' (ID: %s).", article_title, article_id)
 
     raw_html_content, article_text_for_gemini = (
         await article_fetch_runner.fetch_and_stage_article_html(article, config)
@@ -102,7 +114,7 @@ async def _process_single_article(
         llm_client,
     )
 
-    _epub_path, article_markdown_content = await epub_runner.process_epub_and_kindle(
+    _epub_path, _markdown = await epub_runner.process_epub_and_kindle(
         article,
         config,
         raw_html_content,
@@ -117,15 +129,14 @@ async def _process_single_article(
             raw_html_content,
             analysis,
             config,
-            state.all_filtered_vocabulary,
             state.all_article_metadata_for_index,
         )
 
+    # Vocabulary for Anki comes from the analysis (the same list the page shows).
     anki_runner.collect_article_vocab_for_anki(
         article,
         config,
-        article_markdown_content,
-        existing_unique_vocab,
+        analysis,
         state.all_filtered_vocabulary,
     )
 
@@ -138,30 +149,50 @@ async def _process_single_article(
     )
 
 
+def _save_history_if_changed(
+    config: PipelineConfig, processed_history: set[str], state: RunState
+) -> None:
+    """Adds newly processed article IDs to the history and saves it if it grew.
+
+    Called after every article, so a crash later in the run cannot cause
+    already-delivered EPUBs to be sent again. Does nothing with --reprocess.
+    """
+    if config.reprocess:
+        return
+    new_ids = state.newly_processed_article_ids - processed_history
+    if not new_ids:
+        return
+    processed_history.update(new_ids)
+    article_manager.save_processed_history(
+        processed_history, config.processed_history_json
+    )
+
+
 async def _process_all_articles(
     articles_to_process: list[dict],
     config: PipelineConfig,
     state: RunState,
-    existing_unique_vocab: dict[str, dict],
+    processed_history: set[str],
     llm_client: llm.LLMClient,
 ):
-    """Iterates through and processes each article."""
+    """Iterates through and processes each article, saving history after each."""
     for article in articles_to_process:
         try:
             await _process_single_article(
                 article,
                 config,
                 state,
-                existing_unique_vocab,
                 llm_client,
             )
         except Exception:
             article_title = article.get("title", "Untitled Article")
             logger.exception("Failed to process article '%s'", article_title)
+        _save_history_if_changed(config, processed_history, state)
 
 
 async def main():
     config = parse_arguments()
+    setup_logging(config.verbose)
 
     # Build the LLM client once, up front, so a bad --model spec or a missing
     # API key fails immediately rather than on the first article.
@@ -194,18 +225,13 @@ async def main():
     if not articles_to_process:
         return
 
-    # Load the master unique-vocab store once for the whole run.
-    existing_unique_vocab = article_manager.load_unique_vocab(
-        config.unique_vocab_json
-    )
-
     state = RunState()
 
     await _process_all_articles(
         articles_to_process,
         config,
         state,
-        existing_unique_vocab,
+        processed_history,
         llm_client,
     )
 
@@ -228,14 +254,11 @@ async def main():
     if combined_audio_path:
         await audio_runner.deliver_combined_audio(combined_audio_path, config)
 
-    # Update processed history JSON
+    # History was saved after each article; this catches anything marked later.
+    _save_history_if_changed(config, processed_history, state)
     if state.newly_processed_article_ids and not config.reprocess:
-        processed_history.update(state.newly_processed_article_ids)
-        article_manager.save_processed_history(
-            processed_history, config.processed_history_json
-        )
         logger.info(
-            "Updated processed history: %d entries in %s.",
+            "Recorded %d newly processed article(s) in %s.",
             len(state.newly_processed_article_ids),
             config.processed_history_json,
         )

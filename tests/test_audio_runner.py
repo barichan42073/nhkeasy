@@ -276,11 +276,13 @@ def test_deliver_combined_audio_success():
     with patch.object(
         audio_runner, "send_to_kindle", new_callable=MagicMock
     ) as mock_send_to_kindle:
-        mock_send_to_kindle.send_epub_to_kindle.return_value = True
+        mock_send_to_kindle.send_file_by_email.return_value = True
         asyncio.run(audio_runner.deliver_combined_audio(combined_audio_path, config))
 
-    mock_send_to_kindle.send_epub_to_kindle.assert_called_once_with(
-        combined_audio_path, kindle_email="barichan42073@gmail.com"
+    mock_send_to_kindle.send_file_by_email.assert_called_once_with(
+        combined_audio_path,
+        "barichan42073@gmail.com",
+        subject="NHK Easy slowed audio",
     )
 
 
@@ -291,10 +293,10 @@ def test_deliver_combined_audio_failure_does_not_raise():
     with patch.object(
         audio_runner, "send_to_kindle", new_callable=MagicMock
     ) as mock_send_to_kindle:
-        mock_send_to_kindle.send_epub_to_kindle.return_value = False
+        mock_send_to_kindle.send_file_by_email.return_value = False
         asyncio.run(audio_runner.deliver_combined_audio(combined_audio_path, config))
 
-    mock_send_to_kindle.send_epub_to_kindle.assert_called_once()
+    mock_send_to_kindle.send_file_by_email.assert_called_once()
 
 
 def test_deliver_combined_audio_swallows_exceptions():
@@ -304,10 +306,10 @@ def test_deliver_combined_audio_swallows_exceptions():
     with patch.object(
         audio_runner, "send_to_kindle", new_callable=MagicMock
     ) as mock_send_to_kindle:
-        mock_send_to_kindle.send_epub_to_kindle.side_effect = OSError("smtp down")
+        mock_send_to_kindle.send_file_by_email.side_effect = OSError("smtp down")
         asyncio.run(audio_runner.deliver_combined_audio(combined_audio_path, config))
 
-    mock_send_to_kindle.send_epub_to_kindle.assert_called_once()
+    mock_send_to_kindle.send_file_by_email.assert_called_once()
 
 
 def test_deliver_combined_audio_no_send_to_kindle_module(caplog):
@@ -319,6 +321,20 @@ def test_deliver_combined_audio_no_send_to_kindle_module(caplog):
         asyncio.run(audio_runner.deliver_combined_audio(combined_audio_path, config))
 
     assert "send_to_kindle module is not available" in caplog.text
+
+
+def test_deliver_combined_audio_no_recipient_logs_error_and_does_not_send(caplog):
+    combined_audio_path = Path("/tmp/combined.mp3")
+    config = Mock(combined_mp3_email="")
+    caplog.set_level(audio_runner.logging.ERROR)
+
+    with patch.object(
+        audio_runner, "send_to_kindle", new_callable=MagicMock
+    ) as mock_send_to_kindle:
+        asyncio.run(audio_runner.deliver_combined_audio(combined_audio_path, config))
+
+    mock_send_to_kindle.send_file_by_email.assert_not_called()
+    assert "COMBINED_MP3_EMAIL is not set" in caplog.text
 
 
 def test_avlib_path_resolution():

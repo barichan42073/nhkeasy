@@ -4,6 +4,7 @@
 import json
 import logging
 import re  # Added for _strip_furigana_text
+from pathlib import Path
 
 from bs4 import BeautifulSoup
 from bs4.element import NavigableString, Tag
@@ -15,7 +16,10 @@ from article_schema import ArticleAnalysis, VocabItem
 
 logger = logging.getLogger(__name__)
 
-_jinja_env = Environment(loader=FileSystemLoader("templates"), autoescape=True)
+# Anchored to the project folder (not the working directory), like styles.css.
+_TEMPLATE_DIR = Path(__file__).resolve().parent / "templates"
+
+_jinja_env = Environment(loader=FileSystemLoader(str(_TEMPLATE_DIR)), autoescape=True)
 
 
 def _clean_article_body(article_body: Tag) -> None:

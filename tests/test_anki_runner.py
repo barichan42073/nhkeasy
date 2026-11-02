@@ -17,8 +17,7 @@ def test_collect_article_vocab_for_anki_noop_when_no_anki():
         anki_runner.collect_article_vocab_for_anki(
             article={"title": "Test"},
             config=config,
-            article_markdown_content="some markdown",
-            existing_unique_vocab={},
+            analysis=Mock(),
             all_filtered_vocabulary=all_filtered_vocabulary,
         )
 
@@ -26,7 +25,7 @@ def test_collect_article_vocab_for_anki_noop_when_no_anki():
     assert all_filtered_vocabulary == []
 
 
-def test_collect_article_vocab_for_anki_noop_when_no_markdown():
+def test_collect_article_vocab_for_anki_noop_when_no_analysis():
     config = Mock(no_anki=False)
     all_filtered_vocabulary = []
 
@@ -34,8 +33,7 @@ def test_collect_article_vocab_for_anki_noop_when_no_markdown():
         anki_runner.collect_article_vocab_for_anki(
             article={"title": "Test"},
             config=config,
-            article_markdown_content=None,
-            existing_unique_vocab={},
+            analysis=None,
             all_filtered_vocabulary=all_filtered_vocabulary,
         )
 
@@ -46,8 +44,8 @@ def test_collect_article_vocab_for_anki_noop_when_no_markdown():
 def test_collect_article_vocab_for_anki_extends_pool():
     config = Mock(no_anki=False)
     all_filtered_vocabulary = []
-    existing_unique_vocab = {"foo": {"bar": "baz"}}
     article = {"title": "Test"}
+    analysis = Mock()
     fake_vocab_items = [{"word": "犬"}, {"word": "猫"}]
 
     with patch.object(
@@ -56,14 +54,11 @@ def test_collect_article_vocab_for_anki_extends_pool():
         anki_runner.collect_article_vocab_for_anki(
             article=article,
             config=config,
-            article_markdown_content="some markdown",
-            existing_unique_vocab=existing_unique_vocab,
+            analysis=analysis,
             all_filtered_vocabulary=all_filtered_vocabulary,
         )
 
-    mock_build.assert_called_once_with(
-        article, "some markdown", existing_unique_vocab, max_words=3
-    )
+    mock_build.assert_called_once_with(article, analysis)
     assert all_filtered_vocabulary == fake_vocab_items
 
 
@@ -239,6 +234,60 @@ def test_generate_and_deliver_happy_path_with_send():
     fake_anki_web_manager.import_and_sync.assert_called_once_with(
         str(fake_package_path), with_scheduling=False
     )
+
+
+def _send_patches(gen_return, manager):
+    return (
+        patch.object(anki_runner.article_manager, "load_unique_vocab", return_value={}),
+        patch.object(anki_runner.anki_pipeline, "build_daily_anki_package_config", return_value=Mock()),
+        patch.object(anki_runner.anki_generator, "generate_anki_package", return_value=gen_return),
+        patch.object(anki_runner.article_manager, "update_unique_vocab", return_value=1),
+        patch.object(anki_runner.article_manager, "save_unique_vocab"),
+        patch.object(anki_runner, "_setup_anki_manager", return_value=manager),
+    )
+
+
+def test_new_words_recorded_after_successful_import():
+    config = Mock(no_anki=False, send_anki_to_app=True, unique_vocab_json=Path("/tmp/uv.json"))
+    pool = [{"word": "犬", "article_title": "A"}]
+    manager = MagicMock()
+    order = []
+    manager.import_and_sync.side_effect = lambda *a, **k: order.append("import")
+
+    p = _send_patches(Path("/tmp/daily.apkg"), manager)
+    with p[0], p[1], p[2], p[3] as mock_update, p[4] as mock_save, p[5]:
+        mock_update.side_effect = lambda *a, **k: order.append("record") or 1
+        asyncio.run(anki_runner.generate_and_deliver_daily_anki_package(pool, config))
+
+    assert order == ["import", "record"]
+    mock_save.assert_called_once()
+
+
+def test_new_words_not_recorded_when_import_fails():
+    config = Mock(no_anki=False, send_anki_to_app=True, unique_vocab_json=Path("/tmp/uv.json"))
+    pool = [{"word": "犬", "article_title": "A"}]
+    manager = MagicMock()
+    manager.import_and_sync.side_effect = RuntimeError("sync failed")
+
+    p = _send_patches(Path("/tmp/daily.apkg"), manager)
+    with p[0], p[1], p[2], p[3] as mock_update, p[4] as mock_save, p[5]:
+        asyncio.run(anki_runner.generate_and_deliver_daily_anki_package(pool, config))
+
+    mock_update.assert_not_called()
+    mock_save.assert_not_called()
+
+
+def test_new_words_not_recorded_when_import_cannot_start():
+    # e.g. ANKIWEB_USER/PASS missing: _setup_anki_manager returns None
+    config = Mock(no_anki=False, send_anki_to_app=True, unique_vocab_json=Path("/tmp/uv.json"))
+    pool = [{"word": "犬", "article_title": "A"}]
+
+    p = _send_patches(Path("/tmp/daily.apkg"), None)
+    with p[0], p[1], p[2], p[3] as mock_update, p[4] as mock_save, p[5]:
+        asyncio.run(anki_runner.generate_and_deliver_daily_anki_package(pool, config))
+
+    mock_update.assert_not_called()
+    mock_save.assert_not_called()
 
 
 # ---------------------------------------------------------------------------

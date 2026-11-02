@@ -17,7 +17,44 @@ OUTPUT_FILE = OUTPUT_DIR / "articles.json"
 FEED_URL = "https://nhkeasier.com/feed/"  # Or your target RSS feed URL
 
 
-def save_feed_data(days_back: int = 3, feed_source: str | Path | None = None, output_file: Path = OUTPUT_FILE):
+def _feed_is_usable(feed, source: str, output_file: Path) -> bool:
+    """Decides whether a parsed feed may replace articles.json.
+
+    A failed download (network error, HTTP error status) or a feed with no
+    entries must not overwrite the existing file with an empty list. A feed
+    that parsed with a minor error but still has entries is used, with a
+    warning.
+    """
+    status = feed.get("status")
+    if isinstance(status, int) and status >= 400:
+        logger.error(
+            "Feed request to %s returned HTTP %d; keeping existing %s.",
+            source, status, output_file,
+        )
+        return False
+    if not feed.entries:
+        if feed.get("bozo"):
+            logger.error(
+                "Could not read feed %s (%s); keeping existing %s.",
+                source, feed.get("bozo_exception"), output_file,
+            )
+        else:
+            logger.error(
+                "Feed %s returned no entries; keeping existing %s.",
+                source, output_file,
+            )
+        return False
+    if feed.get("bozo"):
+        logger.warning(
+            "Feed %s parsed with an error (%s); using its %d entries.",
+            source, feed.get("bozo_exception"), len(feed.entries),
+        )
+    return True
+
+
+def save_feed_data(days_back: int = 3, feed_source: str | Path | None = None, output_file: Path = OUTPUT_FILE) -> bool:
+    """Refreshes articles.json from the feed. Returns False (and leaves the
+    existing file untouched) when the feed could not be fetched or is empty."""
     # Ensure storage directory exists
     output_file.parent.mkdir(parents=True, exist_ok=True)
 
@@ -34,10 +71,14 @@ def save_feed_data(days_back: int = 3, feed_source: str | Path | None = None, ou
 
     # Fetch and parse feed
     feed = feedparser.parse(resolved_source)
+    if not _feed_is_usable(feed, resolved_source, output_file):
+        return False
     new_articles = []
 
-    # Calculate cutoff days
-    cutoff_days = max(days_back, 3) if days_back > 0 else 3
+    # articles.json is a cache of recent feed entries, so it always keeps at
+    # least 3 days; the pipeline applies --days-back itself when choosing
+    # what to process.
+    cutoff_days = max(days_back, 3)
     cutoff_date = datetime.now(timezone.utc) - timedelta(days=cutoff_days)
     logger.info("Cutoff date set to %s (considering up to %d days back)", cutoff_date, cutoff_days)
 
@@ -92,6 +133,7 @@ def save_feed_data(days_back: int = 3, feed_source: str | Path | None = None, ou
     logger.info(
         "Successfully updated %d articles to %s", len(new_articles), output_file
     )
+    return True
 
 
 if __name__ == "__main__":

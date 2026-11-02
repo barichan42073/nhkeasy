@@ -7,8 +7,8 @@ they compute and return new data structures. None of these functions write
 files to disk, make network calls, or invoke external processes/scripts.
 
 Actual .apkg file generation (via anki_generator), unique_vocab.json
-persistence (via article_manager), and AnkiConnect/AnkiWeb synchronization
-are all performed by the imperative shell in pipeline.py.
+persistence (via article_manager), and AnkiWeb synchronization are all
+performed by the imperative shell in anki_runner.py.
 """
 
 import logging
@@ -17,41 +17,40 @@ from collections.abc import Container
 from datetime import datetime, timezone
 
 import anki_generator
-import vocab_extractor
+from article_schema import ArticleAnalysis
 from config import PipelineConfig
 
 logger = logging.getLogger(__name__)
 
 
 def build_article_vocab_items(
-    article: dict,
-    article_markdown_content: str | None,
-    existing_unique_vocab: dict[str, dict],
-    max_words: int = 3,
+    article: dict, analysis: ArticleAnalysis | None
 ) -> list[dict[str, str]]:
     """
-    Extracts up to `max_words` new vocabulary items for a single article,
-    tagging each item with the article's id/title. Performs no I/O; the
-    caller is responsible for loading `existing_unique_vocab` from disk
-    beforehand and passing it in.
+    Turns an article's analysed vocabulary (the side_vocab list the page also
+    shows) into Anki vocab items tagged with the article's id/title. No
+    per-article cap and no known-word filtering here: the daily step drops
+    known words (counting their recurrence) and shares the daily cap
+    round-robin across articles. Pure function, no I/O.
     """
-    if not article_markdown_content:
+    if analysis is None:
         return []
 
     article_id = article.get("id", article["link"])
     article_title = article.get("title", "Untitled Article")
 
-    article_vocab = vocab_extractor.filter_vocabulary_from_markdown(
-        article_markdown_content,
-        max_words=max_words,
-        existing_unique_vocab=existing_unique_vocab,
-    )
-
-    for item in article_vocab:
-        item["article_id"] = article_id
-        item["article_title"] = article_title
-
-    return article_vocab
+    return [
+        {
+            "word": vocab.word,
+            "reading": vocab.reading,
+            "definition": vocab.definition,
+            "jlpt_level": vocab.jlpt_level,
+            "article_id": article_id,
+            "article_title": article_title,
+        }
+        for vocab in analysis.side_vocab
+        if vocab.word
+    ]
 
 
 def split_known_vocab(

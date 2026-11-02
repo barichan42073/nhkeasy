@@ -184,11 +184,19 @@ async def deliver_combined_audio(
         )
         return
 
-    recipient = config.combined_mp3_email or "barichan42073@gmail.com"
+    recipient = config.combined_mp3_email
+    if not recipient:
+        logger.error(
+            "COMBINED_MP3_EMAIL is not set; not sending the combined MP3 (%s).",
+            combined_audio_path,
+        )
+        return
 
     try:
-        success = send_to_kindle.send_epub_to_kindle(
-            combined_audio_path, kindle_email=recipient
+        success = send_to_kindle.send_file_by_email(
+            combined_audio_path,
+            recipient,
+            subject="NHK Easy slowed audio",
         )
         if success:
             logger.info("Sent combined MP3 to %s", recipient)

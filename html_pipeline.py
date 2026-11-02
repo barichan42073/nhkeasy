@@ -6,12 +6,13 @@ already-computed ArticleAnalysis, and in-memory metadata lists, they
 compute and return new data structures. They perform no disk writes, no
 network requests, no locale/global-state mutation, and invoke no external
 processes. All file I/O (writing HTML/index/manifest files, copying
-styles.css) is handled by the imperative shell in pipeline.py.
+styles.css) is handled by the imperative shell in html_runner.py.
 """
 
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 
 from bs4 import BeautifulSoup
 
@@ -20,6 +21,26 @@ from utils import find_mp3_url, sanitize_filename
 from web_builder import render_interactive_page
 
 logger = logging.getLogger(__name__)
+
+
+def article_publication_date(article: dict, fallback: datetime) -> datetime:
+    """Publication date from the feed's `published` string (RFC 822, e.g.
+    'Mon, 2 Nov 2026 20:30:00 +0900', or ISO 8601), as an aware datetime.
+    Returns `fallback` if it is missing or unparseable. Pure function."""
+    published = (article.get("published") or "").strip()
+    if not published:
+        return fallback
+    try:
+        parsed = parsedate_to_datetime(published)
+    except (TypeError, ValueError):
+        try:
+            parsed = datetime.fromisoformat(published)
+        except ValueError:
+            logger.warning("Could not parse published date %r; using %s.", published, fallback)
+            return fallback
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed
 
 
 def _fix_article_image_urls(
@@ -62,13 +83,13 @@ class ArticleHtmlPayload:
     html_filename: str
     html_content: str
     metadata_entry: dict
-    vocab_items: list[dict[str, str]]
 
 
 def build_article_html_payload(
     article: dict,
     raw_html_content: str,
     analysis: ArticleAnalysis,
+    now: datetime | None = None,
 ) -> ArticleHtmlPayload | None:
     """
     Builds the interactive HTML content and associated metadata/vocab
@@ -94,7 +115,9 @@ def build_article_html_payload(
 
         html_filename = sanitize_filename(f"{article_title}_{article_id}.html")
 
-        article_pub_date = article.get("date_parsed", datetime.now(timezone.utc))
+        article_pub_date = article_publication_date(
+            article, now or datetime.now(timezone.utc)
+        )
         metadata_entry = {
             "id": article_id,
             "title": article_title,
@@ -104,22 +127,10 @@ def build_article_html_payload(
             "kicker": analysis.kicker,
         }
 
-        vocab_items = [
-            {
-                "word": vocab.word,
-                "reading": vocab.reading,
-                "definition": vocab.definition,
-                "jlpt_level": vocab.jlpt_level,
-                "article_title": article_title,
-            }
-            for vocab in analysis.side_vocab
-        ]
-
         return ArticleHtmlPayload(
             html_filename=html_filename,
             html_content=html_output,
             metadata_entry=metadata_entry,
-            vocab_items=vocab_items,
         )
     except Exception:
         logger.exception(

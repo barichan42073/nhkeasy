@@ -66,7 +66,8 @@ def save_processed_history(history: set[str], processed_history_json_path: Path)
         with open(temp_file, "w", encoding="utf-8") as file:
             json.dump(list(history), file, ensure_ascii=False, indent=2)
         temp_file.replace(processed_history_json_path)
-        logger.info(
+        # DEBUG: saved after every article; pipeline.py logs one summary line.
+        logger.debug(
             "Updated processed history: %d entries in %s.",
             len(history),
             processed_history_json_path,
@@ -213,7 +214,8 @@ def filter_new_articles(
             continue
 
         new_articles.append(article)
-        logger.info(
+        # DEBUG: pipeline.py logs "Processing ..." for each article it runs.
+        logger.debug(
             "Eligible for processing: '%s' (ID: %s) - published %s.",
             article.get("title", "Untitled"),
             article_id,

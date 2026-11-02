@@ -90,5 +90,53 @@ class TestSendToKindle(unittest.TestCase):
                 self.assertFalse(result)
 
 
+    def test_epub_attached_as_epub(self):
+        with tempfile.NamedTemporaryFile(suffix=".epub") as tmp:
+            tmp_path = Path(tmp.name)
+            tmp_path.write_bytes(b"dummy epub data")
+            with patch("smtplib.SMTP") as mock_smtp_cls:
+                mock_smtp = MagicMock()
+                mock_smtp_cls.return_value.__enter__.return_value = mock_smtp
+                self.assertTrue(send_to_kindle.send_epub_to_kindle(tmp_path))
+                sent_msg = mock_smtp.send_message.call_args[0][0]
+                attachment = next(sent_msg.iter_attachments())
+                self.assertEqual(attachment.get_content_type(), "application/epub+zip")
+
+    def test_send_file_by_email_mp3_is_audio_mpeg(self):
+        with tempfile.NamedTemporaryFile(suffix=".mp3") as tmp:
+            tmp_path = Path(tmp.name)
+            tmp_path.write_bytes(b"dummy mp3 data")
+            with patch("smtplib.SMTP") as mock_smtp_cls:
+                mock_smtp = MagicMock()
+                mock_smtp_cls.return_value.__enter__.return_value = mock_smtp
+                result = send_to_kindle.send_file_by_email(
+                    tmp_path, "me@example.com", subject="NHK Easy slowed audio"
+                )
+                self.assertTrue(result)
+                sent_msg = mock_smtp.send_message.call_args[0][0]
+                self.assertEqual(sent_msg["Subject"], "NHK Easy slowed audio")
+                self.assertEqual(sent_msg["To"], "me@example.com")
+                attachment = next(sent_msg.iter_attachments())
+                self.assertEqual(attachment.get_content_type(), "audio/mpeg")
+
+    def test_send_file_by_email_no_recipient(self):
+        with tempfile.NamedTemporaryFile(suffix=".mp3") as tmp:
+            self.assertFalse(
+                send_to_kindle.send_file_by_email(Path(tmp.name), "", subject="x")
+            )
+
+    def test_import_does_not_configure_root_logging(self):
+        import importlib
+        import logging
+        root = logging.getLogger()
+        saved = root.handlers[:]
+        root.handlers = []
+        try:
+            importlib.reload(send_to_kindle)
+            self.assertEqual(root.handlers, [])
+        finally:
+            root.handlers = saved
+
+
 if __name__ == "__main__":
     unittest.main()

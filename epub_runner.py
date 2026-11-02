@@ -43,8 +43,10 @@ async def process_epub_and_kindle(
 ) -> tuple[Path | None, str | None]:
     """
     Converts a single article into an EPUB file and, if enabled, delivers
-    it to a Kindle device via email. Marks the article as processed on
-    successful EPUB generation, and increments kindle_sent_count[0] on
+    it to a Kindle device via email. Marks the article as processed only
+    once it is fully delivered: on successful EPUB generation when Kindle
+    delivery is off, otherwise only after a successful send (so a failed
+    send is retried on the next run). Increments kindle_sent_count[0] on
     successful delivery.
 
     Returns a tuple of (epub_path, article_markdown_content). Both will be
@@ -72,7 +74,6 @@ async def process_epub_and_kindle(
         return None, None
 
     logger.info("Generated EPUB for '%s' -> %s", article_title, epub_path)
-    newly_processed_article_ids.add(article_id)
 
     if config.send_to_kindle:
         try:
@@ -81,15 +82,21 @@ async def process_epub_and_kindle(
             )
             if success:
                 kindle_sent_count[0] += 1
+                newly_processed_article_ids.add(article_id)
             else:
                 logger.error(
-                    "Failed to send EPUB for '%s' to Kindle.", article_title
+                    "Failed to send EPUB for '%s' to Kindle; it will be retried "
+                    "on the next run.",
+                    article_title,
                 )
         except Exception:
             logger.exception(
-                "Unexpected error sending EPUB for '%s' to Kindle.", article_title
+                "Unexpected error sending EPUB for '%s' to Kindle; it will be "
+                "retried on the next run.",
+                article_title,
             )
     else:
         logger.info("Kindle delivery disabled; skipping send for '%s'.", article_title)
+        newly_processed_article_ids.add(article_id)
 
     return epub_path, article_markdown_content

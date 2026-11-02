@@ -27,6 +27,8 @@ _TEMPLATE_DIR = Path(__file__).resolve().parent
 _INDEX_TEMPLATE_NAME = "index_template.html"
 _MANIFEST_FILENAME = "manifest.json"
 _STYLES_FILENAME = "styles.css"
+# The one stylesheet, anchored to the project folder (not the working directory).
+_STYLES_SOURCE = _TEMPLATE_DIR / _STYLES_FILENAME
 
 _WEEKDAY_JA = ["月", "火", "水", "木", "金", "土", "日"]
 
@@ -58,7 +60,7 @@ def _format_japanese_dates(current_date: datetime) -> tuple[str, str]:
 
 def _copy_styles_css(config: PipelineConfig) -> None:
     """Copies the project's styles.css into the HTML output and top-level directories."""
-    source_css = Path("styles.css")
+    source_css = _STYLES_SOURCE
     if not source_css.is_file():
         logger.warning("styles.css not found at %s; skipping copy.", source_css)
         return
@@ -107,14 +109,13 @@ async def write_article_html_output(
     raw_html_content: str,
     analysis: ArticleAnalysis,
     config: PipelineConfig,
-    all_filtered_vocabulary: list[dict[str, str]],
     all_article_metadata_for_index: list[dict],
 ) -> None:
     """
     Builds the interactive HTML page for a single article and writes it to
-    disk, then accumulates the article's metadata and vocabulary into the
-    shared, in-memory lists used later for the index page and Anki
-    generation.
+    disk, then adds the article's metadata to the shared in-memory list used
+    later for the index page. (Anki vocabulary is collected separately, from
+    the analysis, by anki_runner.)
     """
     article_title = article.get("title", "Untitled Article")
 
@@ -137,7 +138,6 @@ async def write_article_html_output(
         return
 
     all_article_metadata_for_index.append(payload.metadata_entry)
-    all_filtered_vocabulary.extend(payload.vocab_items)
 
 
 async def write_smartreader_index(

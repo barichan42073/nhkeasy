@@ -28,6 +28,9 @@ T = TypeVar("T", bound=BaseModel)
 
 DEFAULT_PROVIDER = "gemini"
 
+# Seconds to wait for one model reply before giving up on that request.
+REQUEST_TIMEOUT_SECONDS = 120.0
+
 # key_env: conventional env var name (overridable with --api-key-env)
 # base_url: present only for OpenAI-compatible providers
 PROVIDERS: dict[str, dict[str, str]] = {
@@ -71,35 +74,59 @@ class LLMClient(Protocol):
 
 
 class GeminiClient:
-    """Native Gemini adapter (strict response_schema enforcement)."""
+    """Native Gemini adapter (strict response_schema enforcement).
 
-    def __init__(self, model: str, api_key: str):
+    Strict mode makes invalid output rare, but an empty or invalid reply is
+    retried up to `retries` extra times (same request; Gemini has no
+    conversational correction step here).
+    """
+
+    def __init__(self, model: str, api_key: str, retries: int = 1):
         self.model = model
-        self.client = genai.Client(api_key=api_key)
-
-    async def generate_structured(self, prompt: str, schema: type[T]) -> T:
-        logger.info("Calling Gemini model '%s'...", self.model)
-        response = await self.client.aio.models.generate_content(
-            model=self.model,
-            contents=prompt,
-            config={
-                "response_mime_type": "application/json",
-                "response_schema": schema,
-            },
+        self.retries = retries
+        # google-genai takes its HTTP timeout in milliseconds.
+        self.client = genai.Client(
+            api_key=api_key,
+            http_options={"timeout": int(REQUEST_TIMEOUT_SECONDS * 1000)},
         )
 
-        usage = getattr(response, "usage_metadata", None)
-        if usage:
-            logger.info(
-                "Gemini token usage: %d total (%d prompt, %d completion).",
-                usage.total_token_count,
-                usage.prompt_token_count,
-                usage.candidates_token_count,
+    async def generate_structured(self, prompt: str, schema: type[T]) -> T:
+        for attempt in range(self.retries + 1):
+            logger.info("Calling Gemini model '%s'...", self.model)
+            response = await self.client.aio.models.generate_content(
+                model=self.model,
+                contents=prompt,
+                config={
+                    "response_mime_type": "application/json",
+                    "response_schema": schema,
+                },
             )
 
-        if not response.text:
-            raise ValueError("Gemini API returned an empty response.")
-        return schema.model_validate_json(response.text)
+            usage = getattr(response, "usage_metadata", None)
+            if usage:
+                logger.info(
+                    "Gemini token usage: %d total (%d prompt, %d completion).",
+                    usage.total_token_count,
+                    usage.prompt_token_count,
+                    usage.candidates_token_count,
+                )
+
+            try:
+                if not response.text:
+                    raise ValueError("Gemini API returned an empty response.")
+                return schema.model_validate_json(response.text)
+            except ValueError as exc:  # ValidationError is a ValueError
+                if attempt == self.retries:
+                    logger.error("Gemini output still invalid after retries.")
+                    raise
+                logger.warning(
+                    "Invalid Gemini output (attempt %d/%d), retrying: %s",
+                    attempt + 1,
+                    self.retries + 1,
+                    exc,
+                )
+
+        raise RuntimeError("unreachable")  # pragma: no cover
 
 
 class OpenAICompatClient:
@@ -114,7 +141,11 @@ class OpenAICompatClient:
     def __init__(self, model: str, api_key: str, base_url: str, retries: int = 2):
         self.model = model
         self.retries = retries
-        self.client = AsyncOpenAI(api_key=api_key, base_url=base_url)
+        # The SDK already retries connection errors, 429 and 5xx with backoff
+        # (max_retries=2); the timeout stops one request hanging the run.
+        self.client = AsyncOpenAI(
+            api_key=api_key, base_url=base_url, timeout=REQUEST_TIMEOUT_SECONDS
+        )
 
     async def generate_structured(self, prompt: str, schema: type[T]) -> T:
         schema_dict = schema.model_json_schema()

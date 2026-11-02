@@ -49,9 +49,7 @@ class PipelineConfig:
     anki_output_dir: Path
     send_anki_to_app: bool
     no_kindle: bool
-    rss_fetcher_dir: Path | None = None
     generate_html: bool = True
-    html_template_path: Path = Path("template.html")
     html_output_dir: Path = Path("html_output")
     smartreader_dir: Path = Path("smartreader")
     use_staged_analysis: bool = False
@@ -82,8 +80,6 @@ class PipelineConfig:
 
     def __post_init__(self):
         """Ensure all necessary directories exist after initialization."""
-        if self.rss_fetcher_dir is None:
-            self.rss_fetcher_dir = self.nhkeasy_dir
         self.nhkeasy_dir.mkdir(parents=True, exist_ok=True)
         self.feed_dir.mkdir(parents=True, exist_ok=True)
         self.staging_dir.mkdir(parents=True, exist_ok=True)
@@ -132,7 +128,7 @@ def parse_arguments() -> PipelineConfig:
     parser.add_argument(
         "--keep-md",
         action="store_true",
-        help="Keep the intermediate .md file after conversion.",
+        help="Keep the intermediate .md and .txt files beside each EPUB.",
     )
     parser.add_argument(
         "--max-articles",
@@ -187,18 +183,6 @@ def parse_arguments() -> PipelineConfig:
         help="Generate interactive HTML pages.",
     )
     parser.add_argument(
-        "--html-template",
-        type=Path,
-        default=Path("template.html"),
-        help="Path to the Jinja2 template for HTML generation.",
-    )
-    parser.add_argument(
-        "--html-output-dir",
-        type=Path,
-        default=Path("html_output"),
-        help="Directory to save generated HTML files.",
-    )
-    parser.add_argument(
         "--use-staged-analysis",
         action="store_true",
         help="Use existing staged analysis JSON files if available.",
@@ -214,7 +198,7 @@ def parse_arguments() -> PipelineConfig:
     parser.add_argument(
         "--verbose",
         action="store_true",
-        help="Enable verbose logging.",
+        help="Enable verbose (DEBUG) logging.",
     )
     args = parser.parse_args()
 
@@ -255,7 +239,6 @@ def parse_arguments() -> PipelineConfig:
         send_anki_to_app=args.send_anki_to_app,
         no_kindle=args.no_kindle,
         generate_html=args.generate_html,
-        html_template_path=args.html_template,
         html_output_dir=nhkeasy_dir / "html_output",
         smartreader_dir=nhkeasy_dir / "smartreader",
         use_staged_analysis=args.use_staged_analysis,

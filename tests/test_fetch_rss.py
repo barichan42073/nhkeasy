@@ -39,7 +39,6 @@ def test_nhkeasy_destination_paths():
     assert config.html_output_dir == expected_base / "html_output"
     assert config.smartreader_dir == expected_base / "smartreader"
     assert config.index_html_path == expected_base / "index.html"
-    assert config.rss_fetcher_dir == expected_base
 
     assert fetch_rss.OUTPUT_DIR == expected_feed
     assert fetch_rss.OUTPUT_FILE == expected_feed / "articles.json"
@@ -94,3 +93,83 @@ def test_save_feed_data_local_source(tmp_path):
     assert articles[0]["title"] == "Test Article 1"
     assert articles[0]["link"] == "https://nhkeasier.com/story/1"
     assert articles[0]["image_url"] == "https://nhkeasier.com/img1.jpg"
+
+
+def _fake_feed(entries, bozo=False, status=None, exc=None):
+    from types import SimpleNamespace
+
+    class _Feed(dict):
+        pass
+
+    feed = _Feed(bozo=bozo, bozo_exception=exc)
+    if status is not None:
+        feed["status"] = status
+    feed.entries = entries
+    return feed
+
+
+def _entry():
+    from datetime import timedelta
+    from feedparser import FeedParserDict
+
+    pub = (datetime.now(timezone.utc) - timedelta(days=1)).strftime(
+        "%a, %d %b %Y %H:%M:%S +0000"
+    )
+    return FeedParserDict(
+        id="https://nhkeasier.com/story/1/", title="T", link="https://nhkeasier.com/story/1/",
+        published=pub, summary="<p>no image</p>",
+    )
+
+
+def test_failed_feed_keeps_existing_articles_json(tmp_path):
+    output_json = tmp_path / "articles.json"
+    output_json.write_text('[{"id": "old"}]', encoding="utf-8")
+
+    with patch.object(
+        fetch_rss.feedparser, "parse",
+        return_value=_fake_feed([], bozo=True, exc=OSError("no network")),
+    ):
+        assert fetch_rss.save_feed_data(output_file=output_json) is False
+
+    assert json.loads(output_json.read_text(encoding="utf-8")) == [{"id": "old"}]
+
+
+def test_http_error_keeps_existing_articles_json(tmp_path):
+    output_json = tmp_path / "articles.json"
+    output_json.write_text('[{"id": "old"}]', encoding="utf-8")
+
+    with patch.object(
+        fetch_rss.feedparser, "parse", return_value=_fake_feed([_entry()], status=503)
+    ):
+        assert fetch_rss.save_feed_data(output_file=output_json) is False
+
+    assert json.loads(output_json.read_text(encoding="utf-8")) == [{"id": "old"}]
+
+
+def test_empty_feed_keeps_existing_articles_json(tmp_path):
+    output_json = tmp_path / "articles.json"
+    output_json.write_text('[{"id": "old"}]', encoding="utf-8")
+
+    with patch.object(fetch_rss.feedparser, "parse", return_value=_fake_feed([])):
+        assert fetch_rss.save_feed_data(output_file=output_json) is False
+
+    assert json.loads(output_json.read_text(encoding="utf-8")) == [{"id": "old"}]
+
+
+def test_minor_parse_error_with_entries_still_saves(tmp_path):
+    output_json = tmp_path / "articles.json"
+
+    with patch.object(
+        fetch_rss.feedparser, "parse",
+        return_value=_fake_feed([_entry()], bozo=True, exc=ValueError("odd xml"), status=200),
+    ):
+        assert fetch_rss.save_feed_data(output_file=output_json) is True
+
+    assert [a["title"] for a in json.loads(output_json.read_text(encoding="utf-8"))] == ["T"]
+
+
+def test_dead_html_options_removed():
+    for flag in ("--html-template", "--html-output-dir"):
+        with patch.object(sys, "argv", ["pipeline.py", flag, "x"]):
+            with pytest.raises(SystemExit):
+                parse_arguments()

@@ -41,8 +41,8 @@ def test_format_japanese_dates_monday():
 
 
 def test_copy_styles_css_success(tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
     source = tmp_path / "styles.css"
+    monkeypatch.setattr(html_runner, "_STYLES_SOURCE", source)
     source.write_text("body { color: red; }", encoding="utf-8")
 
     output_dir = tmp_path / "output"
@@ -57,8 +57,8 @@ def test_copy_styles_css_success(tmp_path, monkeypatch):
 
 
 def test_copy_styles_css_with_nhkeasy_dir(tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
     source = tmp_path / "styles.css"
+    monkeypatch.setattr(html_runner, "_STYLES_SOURCE", source)
     source.write_text("body { color: blue; }", encoding="utf-8")
 
     nhkeasy_dir = tmp_path / "nhkeasy"
@@ -78,7 +78,7 @@ def test_copy_styles_css_with_nhkeasy_dir(tmp_path, monkeypatch):
 
 
 def test_copy_styles_css_missing_source(tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)  # No styles.css created here.
+    monkeypatch.setattr(html_runner, "_STYLES_SOURCE", tmp_path / "styles.css")  # not created
 
     output_dir = tmp_path / "output"
     output_dir.mkdir()
@@ -90,9 +90,14 @@ def test_copy_styles_css_missing_source(tmp_path, monkeypatch):
     assert not (output_dir / "styles.css").exists()
 
 
+def test_styles_source_is_project_root_file():
+    from pathlib import Path as _P
+    assert html_runner._STYLES_SOURCE == _P(html_runner.__file__).resolve().parent / "styles.css"
+
+
 def test_copy_styles_css_copy_error(tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
     source = tmp_path / "styles.css"
+    monkeypatch.setattr(html_runner, "_STYLES_SOURCE", source)
     source.write_text("body {}", encoding="utf-8")
 
     output_dir = tmp_path / "output"
@@ -186,20 +191,11 @@ def test_write_article_html_output_success(tmp_path, monkeypatch):
         html_filename="test_article.html",
         html_content="<html>Test</html>",
         metadata_entry={"id": "abc", "title": "Test Article"},
-        vocab_items=[
-            {
-                "word": "テスト",
-                "reading": "てすと",
-                "definition": "test",
-                "jlpt_level": "n5",
-            }
-        ],
     )
     monkeypatch.setattr(
         html_runner, "build_article_html_payload", lambda *a, **kw: payload
     )
 
-    vocab_list = []
     metadata_list = []
 
     asyncio.run(
@@ -208,7 +204,6 @@ def test_write_article_html_output_success(tmp_path, monkeypatch):
             raw_html_content="<html></html>",
             analysis=None,
             config=config,
-            all_filtered_vocabulary=vocab_list,
             all_article_metadata_for_index=metadata_list,
         )
     )
@@ -217,7 +212,6 @@ def test_write_article_html_output_success(tmp_path, monkeypatch):
     assert output_file.is_file()
     assert output_file.read_text(encoding="utf-8") == "<html>Test</html>"
     assert metadata_list == [payload.metadata_entry]
-    assert vocab_list == payload.vocab_items
 
 
 def test_write_article_html_output_payload_none(tmp_path, monkeypatch):
@@ -229,7 +223,6 @@ def test_write_article_html_output_payload_none(tmp_path, monkeypatch):
         html_runner, "build_article_html_payload", lambda *a, **kw: None
     )
 
-    vocab_list = []
     metadata_list = []
 
     asyncio.run(
@@ -238,12 +231,10 @@ def test_write_article_html_output_payload_none(tmp_path, monkeypatch):
             raw_html_content="<html></html>",
             analysis=None,
             config=config,
-            all_filtered_vocabulary=vocab_list,
             all_article_metadata_for_index=metadata_list,
         )
     )
 
-    assert vocab_list == []
     assert metadata_list == []
     assert list(output_dir.iterdir()) == []
 
@@ -257,7 +248,6 @@ def test_write_article_html_output_write_error(tmp_path, monkeypatch):
         html_filename="test_article.html",
         html_content="<html>Test</html>",
         metadata_entry={"id": "abc", "title": "Test Article"},
-        vocab_items=[{"word": "テスト"}],
     )
     monkeypatch.setattr(
         html_runner, "build_article_html_payload", lambda *a, **kw: payload
@@ -272,7 +262,6 @@ def test_write_article_html_output_write_error(tmp_path, monkeypatch):
 
     monkeypatch.setattr(Path, "write_text", fake_write_text)
 
-    vocab_list = []
     metadata_list = []
 
     asyncio.run(
@@ -281,13 +270,11 @@ def test_write_article_html_output_write_error(tmp_path, monkeypatch):
             raw_html_content="<html></html>",
             analysis=None,
             config=config,
-            all_filtered_vocabulary=vocab_list,
             all_article_metadata_for_index=metadata_list,
         )
     )
 
-    # A failed write should prevent metadata/vocab from being recorded.
-    assert vocab_list == []
+    # A failed write should prevent metadata from being recorded.
     assert metadata_list == []
 
 

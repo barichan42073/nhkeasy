@@ -7,6 +7,7 @@ from pathlib import Path
 import anki_generator
 import anki_pipeline
 import article_manager
+from article_schema import ArticleAnalysis
 from config import PipelineConfig
 
 logger = logging.getLogger(__name__)
@@ -78,25 +79,43 @@ def _setup_anki_manager(config: PipelineConfig):
 def collect_article_vocab_for_anki(
     article: dict,
     config: PipelineConfig,
-    article_markdown_content: str | None,
-    existing_unique_vocab: dict[str, dict],
+    analysis: ArticleAnalysis | None,
     all_filtered_vocabulary: list[dict[str, str]],
 ) -> None:
     """
-    Imperative-shell wrapper: delegates vocabulary extraction to the
-    functional core (anki_pipeline.build_article_vocab_items) and appends
-    the results to the shared in-memory pool.
+    Imperative-shell wrapper: asks the functional core
+    (anki_pipeline.build_article_vocab_items) for the article's vocabulary
+    and appends it to the shared in-memory pool.
     """
-    if config.no_anki or not article_markdown_content:
+    if config.no_anki or analysis is None:
         return
 
-    article_title = article.get("title", "Untitled Article")
-    logger.info("Extracting vocabulary for '%s'...", article_title)
-
-    vocab_items = anki_pipeline.build_article_vocab_items(
-        article, article_markdown_content, existing_unique_vocab, max_words=3
+    vocab_items = anki_pipeline.build_article_vocab_items(article, analysis)
+    logger.debug(
+        "Collected %d vocabulary item(s) for '%s'.",
+        len(vocab_items),
+        article.get("title", "Untitled Article"),
     )
     all_filtered_vocabulary.extend(vocab_items)
+
+
+async def _import_package(package_path: Path, config: PipelineConfig) -> bool:
+    """Imports and syncs the package via AnkiWeb. Returns True on success."""
+    anki_web_manager = _setup_anki_manager(config)
+    if not anki_web_manager:
+        return False
+    logger.info("Importing combined Anki package '%s' into Anki...", package_path.name)
+    try:
+        await asyncio.to_thread(
+            anki_web_manager.import_and_sync,
+            str(package_path),
+            with_scheduling=False,
+        )
+    except Exception:
+        logger.exception("Failed to import Anki package via AnkiWebManager")
+        return False
+    logger.info("Combined Anki package successfully imported and synchronized.")
+    return True
 
 
 async def generate_and_deliver_daily_anki_package(
@@ -106,8 +125,14 @@ async def generate_and_deliver_daily_anki_package(
     """
     Imperative-shell function: uses the functional core to drop words already
     in the master vocabulary, select/shape the daily vocabulary pool and
-    package config, then performs the actual .apkg file generation,
-    unique_vocab.json persistence, and AnkiWeb sync.
+    package config, then performs the .apkg generation, the AnkiWeb import
+    and unique_vocab.json persistence.
+
+    New words are recorded as known only once they are really in Anki: after
+    a successful import, or, with --no-anki-import, once the package is built
+    (you import it yourself). If an import was wanted but failed, the words
+    stay unrecorded so they come up again, and the .apkg is kept on disk.
+    Recurrence counts for already-known words are always saved.
     """
     if config.no_anki:
         logger.info("Anki processing is disabled (--no-anki).")
@@ -132,7 +157,7 @@ async def generate_and_deliver_daily_anki_package(
             master_vocab, anki_pipeline.build_unique_vocab_updates(known_vocab)
         )
 
-    combined_anki_package_path = None
+    recorded_new_words = False
     if new_vocab:
         unique_daily_vocab = anki_pipeline.select_daily_vocab(new_vocab, max_words=12)
         current_date_tag = anki_pipeline.build_daily_tag()
@@ -149,32 +174,30 @@ async def generate_and_deliver_daily_anki_package(
         )
 
         if combined_anki_package_path:
-            added = article_manager.update_unique_vocab(
-                master_vocab,
-                anki_pipeline.build_unique_vocab_updates(unique_daily_vocab),
+            import_wanted = config.send_anki_to_app
+            imported = (
+                await _import_package(combined_anki_package_path, config)
+                if import_wanted
+                else False
             )
-            logger.info("Added %d new words to master unique_vocab.json.", added)
+            if imported or not import_wanted:
+                added = article_manager.update_unique_vocab(
+                    master_vocab,
+                    anki_pipeline.build_unique_vocab_updates(unique_daily_vocab),
+                )
+                recorded_new_words = True
+                logger.info("Added %d new words to master unique_vocab.json.", added)
+            else:
+                logger.warning(
+                    "Anki import did not complete: %d new word(s) not recorded as "
+                    "known, so they can come up again. The package is kept at %s.",
+                    len(unique_daily_vocab),
+                    combined_anki_package_path,
+                )
     else:
         logger.info(
             "No new vocabulary for an Anki package: every collected word is already known."
         )
 
-    if known_vocab or combined_anki_package_path:
+    if known_vocab or recorded_new_words:
         article_manager.save_unique_vocab(master_vocab, config.unique_vocab_json)
-
-    if config.send_anki_to_app and combined_anki_package_path:
-        anki_web_manager = _setup_anki_manager(config)
-        if anki_web_manager:
-            logger.info(
-                "Importing combined Anki package '%s' into Anki...",
-                combined_anki_package_path.name,
-            )
-            try:
-                await asyncio.to_thread(
-                    anki_web_manager.import_and_sync,
-                    str(combined_anki_package_path),
-                    with_scheduling=False,
-                )
-                logger.info("Combined Anki package successfully imported and synchronized.")
-            except Exception:
-                logger.exception("Failed to import Anki package via AnkiWebManager")

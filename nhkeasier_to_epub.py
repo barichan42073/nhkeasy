@@ -592,9 +592,14 @@ async def process_article_to_epub(
     logger.info(f"Converting Markdown to EPUB for '{ebook_title}'...")
     convert_md_to_epub(md_path, output_path, title=ebook_title)
 
-    if not keep_md and md_path.exists():
-        md_path.unlink()
-        logger.debug(f"Removed temporary Markdown file: '{md_path.name}'")
+    if not keep_md:
+        # --keep-md keeps both intermediates (Markdown and text payload) for debugging.
+        for temp_path in (md_path, payload_txt_path):
+            try:
+                temp_path.unlink(missing_ok=True)
+                logger.debug(f"Removed temporary file: '{temp_path.name}'")
+            except OSError:
+                logger.warning(f"Could not remove temporary file: '{temp_path.name}'")
 
     return (output_path, md_content)
 
