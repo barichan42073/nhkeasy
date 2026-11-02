@@ -168,8 +168,9 @@ async def _fetch_nhk_official_html(url: str) -> str | None:
 def load_system_prompt(prompt_path: Path) -> str:
     """Loads the system prompt from the designated Markdown file."""
     if not prompt_path.is_file():
-        print(f"Error: Prompt file not found at '{prompt_path}'", file=sys.stderr)
-        sys.exit(1)
+        # Raise rather than sys.exit: SystemExit is not caught by the
+        # pipeline's per-article error handling and would kill the whole run.
+        raise FileNotFoundError(f"Prompt file not found at '{prompt_path}'")
     return prompt_path.read_text(encoding="utf-8")
 
 
@@ -538,10 +539,6 @@ async def process_article_to_epub(
 ) -> tuple[Path, str]:
     """Core logic for fetching, processing, and converting an article to EPUB."""
     load_dotenv()
-    if not os.getenv("GEMINI_API_KEY"):
-        raise ValueError("GEMINI_API_KEY environment variable not set.")
-
-    system_prompt = load_system_prompt(system_prompt_path)
 
     if html_content is None:
         if article_url is None:
@@ -568,6 +565,12 @@ async def process_article_to_epub(
         )
         md_content = _generate_markdown_from_article_analysis(analysis)
     else:
+        # Only the no-analysis fallback calls Gemini directly, so only it needs
+        # the Gemini key and the system prompt. The pipeline always passes an
+        # analysis, so it works with any --model provider.
+        if not os.getenv("GEMINI_API_KEY"):
+            raise ValueError("GEMINI_API_KEY environment variable not set.")
+        system_prompt = load_system_prompt(system_prompt_path)
         logger.info(
             f"Generating Markdown for '{article_title}' using model '{model_name}' (fallback)..."
         )
