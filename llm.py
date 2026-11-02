@@ -29,7 +29,7 @@ T = TypeVar("T", bound=BaseModel)
 DEFAULT_PROVIDER = "gemini"
 
 # Seconds to wait for one model reply before giving up on that request.
-REQUEST_TIMEOUT_SECONDS = 120.0
+REQUEST_TIMEOUT_SECONDS = float(os.getenv("LLM_TIMEOUT_SECONDS", "120.0"))
 
 # key_env: conventional env var name (overridable with --api-key-env)
 # base_url: present only for OpenAI-compatible providers

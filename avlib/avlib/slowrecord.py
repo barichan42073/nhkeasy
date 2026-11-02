@@ -1,7 +1,7 @@
+import logging
 import os
 import shutil
 import subprocess
-import sys
 import tempfile
 import time
 from pathlib import Path
@@ -9,6 +9,8 @@ from pathlib import Path
 import pysbd
 from groq import Groq
 from pydub import AudioSegment
+
+logger = logging.getLogger(__name__)
 
 # Sentence clips quieter than this (average level, dBFS) are treated as "no
 # speech": they are dropped. This removes Whisper's hallucinated outro lines
@@ -47,9 +49,9 @@ def _keep_failed_input(path):
         FAIL_DIR.mkdir(parents=True, exist_ok=True)
         dest = FAIL_DIR / f"{int(time.time())}_{Path(path).name}"
         shutil.copy(path, dest)
-        print(f"Saved failing ffmpeg input to {dest}", file=sys.stderr)
+        logger.info(f"Saved failing ffmpeg input to {dest}")
     except OSError as e:
-        print(f"Could not save failing input: {e}", file=sys.stderr)
+        logger.error(f"Could not save failing input: {e}")
 
 
 def change_speed_ffmpeg(input_path, output_path, speed=0.8):
@@ -79,11 +81,10 @@ def _stretched_clips(clip, speeds):
                 change_speed_ffmpeg(wav_in, mp3_out, speed=speed)
                 results.append(AudioSegment.from_file(mp3_out))
             except subprocess.CalledProcessError as e:
-                print(
-                    f"WARNING: ffmpeg failed at {speed}x ({e}); using unstretched clip.",
-                    file=sys.stderr,
+                logger.warning(
+                    f"ffmpeg failed at {speed}x ({e}); using unstretched clip."
                 )
-                print(f"STDERR: {e.stderr}", file=sys.stderr)
+                logger.warning(f"STDERR: {e.stderr}")
                 _keep_failed_input(wav_in)
                 results.append(clip)
     return results
@@ -100,10 +101,8 @@ def _normalize_and_export(audio, output_mp3_path):
         try:
             _run_ffmpeg(wav_path, output_mp3_path, [LOUDNORM])
         except subprocess.CalledProcessError as e:
-            print(
-                f"WARNING: loudness normalization failed ({e}); "
-                "exporting without it.",
-                file=sys.stderr,
+            logger.warning(
+                f"loudness normalization failed ({e}); exporting without it."
             )
             _keep_failed_input(wav_path)
             audio.export(output_mp3_path, format="mp3")
@@ -180,7 +179,7 @@ def process_news_with_pysbd(mp3_path, output_mp3_path):
 
     client = Groq(api_key=api_key)
 
-    print(f"1. Transcribing '{mp3_path}' via Groq Whisper...")
+    logger.info(f"1. Transcribing '{mp3_path}' via Groq Whisper...")
     with open(mp3_path, "rb") as file:
         transcription = client.audio.transcriptions.create(
             file=(mp3_path, file.read()),
@@ -197,16 +196,16 @@ def process_news_with_pysbd(mp3_path, output_mp3_path):
     # Pass to the new alignment function with "ja" support
     sentences = align_words_to_pysbd_sentences(words, lang_code="ja")
 
-    print(f"2. Detected {len(sentences)} distinct sentences using PySBD.")
+    logger.info(f"2. Detected {len(sentences)} distinct sentences using PySBD.")
     for idx, s in enumerate(sentences, 1):
-        print(f"   [{idx}] {s['text']}") # Prints out the exact sentences found to verify
+        logger.info(f"   [{idx}] {s['text']}")  # Prints out the exact sentences found to verify
 
     original_audio = AudioSegment.from_file(mp3_path)
     combined_audio = AudioSegment.empty()
     PADDING_MS = 80
     kept = 0
 
-    print("3. Processing sentence repetitions and 1.0x/0.8x/0.7x time-stretching...")
+    logger.info("3. Processing sentence repetitions and 1.0x/0.8x/0.7x time-stretching...")
     for idx, sent in enumerate(sentences, 1):
         start_ms = max(0, int(sent["start"] * 1000) - PADDING_MS)
         end_ms = min(len(original_audio), int(sent["end"] * 1000) + PADDING_MS)
@@ -216,10 +215,9 @@ def process_news_with_pysbd(mp3_path, output_mp3_path):
         # Drop empty/silent clips (usually Whisper hallucinations over silence).
         level = sentence_clip.dBFS if len(sentence_clip) else float("-inf")
         if level < SILENCE_DBFS:
-            print(
+            logger.warning(
                 f"   [{idx}] skipped, no audible speech "
-                f"({level:.1f} dBFS, {len(sentence_clip)} ms): {sent['text']}",
-                file=sys.stderr,
+                f"({level:.1f} dBFS, {len(sentence_clip)} ms): {sent['text']}"
             )
             continue
         kept += 1
@@ -240,4 +238,4 @@ def process_news_with_pysbd(mp3_path, output_mp3_path):
 
     # Save output (one loudness-normalization pass over the whole recording)
     _normalize_and_export(combined_audio, output_mp3_path)
-    print(f"Done! Saved repeated audio to '{output_mp3_path}'.")
+    logger.info(f"Done! Saved repeated audio to '{output_mp3_path}'.")

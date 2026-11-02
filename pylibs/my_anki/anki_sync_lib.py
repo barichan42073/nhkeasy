@@ -1,7 +1,11 @@
+import logging
 import os
-from typing import Optional
-from anki.collection import Collection, ImportAnkiPackageOptions, ImportAnkiPackageRequest
 from pathlib import Path
+from typing import Optional
+
+from anki.collection import Collection, ImportAnkiPackageOptions, ImportAnkiPackageRequest
+
+logger = logging.getLogger(__name__)
 
 class AnkiWebManager:
 
@@ -33,10 +37,10 @@ class AnkiWebManager:
 
         col = Collection(self.db_path)
         try:
-            print("Logging into AnkiWeb...")
+            logger.info("Logging into AnkiWeb...")
             auth = col.sync_login(self.username, self.password, endpoint=None)
 
-            print("Checking sync status with AnkiWeb...")
+            logger.info("Checking sync status with AnkiWeb...")
             sync_result = col.sync_collection(auth, sync_media=True)
 
             # Update endpoint if assigned to a specific cluster
@@ -45,12 +49,12 @@ class AnkiWebManager:
 
             # If local DB is new/empty, download from AnkiWeb
             if sync_result.required == sync_result.FULL_SYNC:
-                print("Downloading remote profile from AnkiWeb...")
+                logger.info("Downloading remote profile from AnkiWeb...")
                 col.full_upload_or_download(auth=auth, server_usn=0, upload=False)
-                print("Download complete.")
+                logger.info("Download complete.")
 
             # Import the .apkg package
-            print(f"Importing package '{apkg_path}'...")
+            logger.info(f"Importing package '{apkg_path}'...")
             col.import_anki_package(
                 ImportAnkiPackageRequest(
                     package_path=apkg_path,
@@ -62,14 +66,14 @@ class AnkiWebManager:
             )
 
             # Push imported changes back up to AnkiWeb
-            print("Pushing new cards to AnkiWeb...")
+            logger.info("Pushing new cards to AnkiWeb...")
             sync_result = col.sync_collection(auth, sync_media=True)
 
             if sync_result.required == sync_result.FULL_SYNC:
-                print("Uploading local state to AnkiWeb...")
+                logger.info("Uploading local state to AnkiWeb...")
                 col.full_upload_or_download(auth=auth, server_usn=0, upload=True)
 
-            print("Successfully imported and synced to AnkiWeb!")
+            logger.info("Successfully imported and synced to AnkiWeb!")
 
         finally:
             col.close()
