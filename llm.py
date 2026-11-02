@@ -1,5 +1,5 @@
 """
-Provider-agnostic structured-output LLM clients.
+Provider-agnostic structured-output LLM clients with built-in fallback support.
 
 The rest of the pipeline only depends on `LLMClient.generate_structured`.
 Choose a provider/model with a spec string such as:
@@ -7,18 +7,18 @@ Choose a provider/model with a spec string such as:
     gemini/gemini-3.8-flash
     deepseek/deepseek-chat
     groq/<model-name>
-
-To add a provider that speaks the OpenAI protocol, add one entry to PROVIDERS.
-To add a provider with its own protocol (e.g. Claude), write another adapter
-class and branch on it in `make_client`.
 """
 
+import copy
 import json
 import logging
 import os
 from typing import Protocol, TypeVar
 
+import httpx
+import openai
 from google import genai
+from google.genai import errors as genai_errors
 from openai import AsyncOpenAI
 from pydantic import BaseModel, ValidationError
 
@@ -31,7 +31,29 @@ DEFAULT_PROVIDER = "gemini"
 # Seconds to wait for one model reply before giving up on that request.
 REQUEST_TIMEOUT_SECONDS = float(os.getenv("LLM_TIMEOUT_SECONDS", "120.0"))
 
-# key_env: conventional env var name (overridable with --api-key-env)
+# Default fallback chain: Gemini first, falling back to DeepSeek
+DEFAULT_FALLBACK_CHAIN = [
+    "gemini/gemini-3.8-flash",
+    "deepseek/deepseek-chat",
+]
+
+# Errors that mean "this provider couldn't produce a valid answer", so the
+# next provider in the chain should be tried. Anything else (TypeError,
+# KeyError, AttributeError...) is treated as a bug and propagates immediately.
+#   openai.APIError      - DeepSeek/Groq HTTP, connection and timeout errors
+#   genai_errors.APIError - Gemini HTTP errors (4xx/5xx, quota)
+#   httpx.HTTPError      - transport errors/timeouts the SDKs don't wrap
+#   TimeoutError         - asyncio timeouts
+#   ValueError           - invalid/empty model output (includes ValidationError)
+FALLBACK_ERRORS: tuple[type[BaseException], ...] = (
+    openai.APIError,
+    genai_errors.APIError,
+    httpx.HTTPError,
+    TimeoutError,
+    ValueError,
+)
+
+# key_env: conventional env var name
 # base_url: present only for OpenAI-compatible providers
 PROVIDERS: dict[str, dict[str, str]] = {
     "gemini": {"key_env": "GEMINI_API_KEY"},
@@ -46,15 +68,13 @@ PROVIDERS: dict[str, dict[str, str]] = {
 }
 
 
+class MissingAPIKeyError(ValueError):
+    """Raised when a provider's API key env var is not set."""
+
+
 def _mark_all_required(node):
     """
     Marks every property as required, recursively, in a JSON Schema dict.
-
-    Pydantic omits fields that have defaults from "required", and models
-    without strict schema enforcement (DeepSeek, Groq...) then tend to skip
-    them (e.g. an empty surface_mapping). Gemini's strict mode always fills
-    them, so this makes the prompt-based path behave the same. Pydantic
-    validation itself is unchanged.
     """
     if isinstance(node, dict):
         props = node.get("properties")
@@ -74,17 +94,11 @@ class LLMClient(Protocol):
 
 
 class GeminiClient:
-    """Native Gemini adapter (strict response_schema enforcement).
-
-    Strict mode makes invalid output rare, but an empty or invalid reply is
-    retried up to `retries` extra times (same request; Gemini has no
-    conversational correction step here).
-    """
+    """Native Gemini adapter (strict response_schema enforcement)."""
 
     def __init__(self, model: str, api_key: str, retries: int = 1):
         self.model = model
         self.retries = retries
-        # google-genai takes its HTTP timeout in milliseconds.
         self.client = genai.Client(
             api_key=api_key,
             http_options={"timeout": int(REQUEST_TIMEOUT_SECONDS * 1000)},
@@ -115,7 +129,7 @@ class GeminiClient:
                 if not response.text:
                     raise ValueError("Gemini API returned an empty response.")
                 return schema.model_validate_json(response.text)
-            except ValueError as exc:  # ValidationError is a ValueError
+            except ValueError as exc:
                 if attempt == self.retries:
                     logger.error("Gemini output still invalid after retries.")
                     raise
@@ -130,28 +144,20 @@ class GeminiClient:
 
 
 class OpenAICompatClient:
-    """
-    Adapter for any OpenAI-protocol endpoint (DeepSeek, Groq, OpenAI, Ollama...).
-
-    These providers only guarantee "some JSON", so the schema is placed in the
-    prompt and the reply is validated with Pydantic. On a validation failure the
-    error is fed back to the model for up to `retries` extra attempts.
-    """
+    """Adapter for any OpenAI-protocol endpoint (DeepSeek, Groq, OpenAI...)."""
 
     def __init__(self, model: str, api_key: str, base_url: str, retries: int = 2):
         self.model = model
         self.retries = retries
-        # The SDK already retries connection errors, 429 and 5xx with backoff
-        # (max_retries=2); the timeout stops one request hanging the run.
         self.client = AsyncOpenAI(
             api_key=api_key, base_url=base_url, timeout=REQUEST_TIMEOUT_SECONDS
         )
 
     async def generate_structured(self, prompt: str, schema: type[T]) -> T:
-        schema_dict = schema.model_json_schema()
+        # Deepcopy prevents permanent mutation of the shared Pydantic schema cache
+        schema_dict = copy.deepcopy(schema.model_json_schema())
         _mark_all_required(schema_dict)
         schema_json = json.dumps(schema_dict, ensure_ascii=False)
-        # JSON mode on these APIs requires the word "JSON" in the prompt.
         messages = [
             {
                 "role": "user",
@@ -207,17 +213,45 @@ class OpenAICompatClient:
         raise RuntimeError("unreachable")  # pragma: no cover
 
 
-def make_client(model_spec: str, api_key_env: str | None = None) -> LLMClient:
-    """
-    Builds an LLMClient from a 'provider/model' spec.
+class FallbackClient:
+    """Wraps multiple LLMClient instances and tries them in sequence."""
 
-    `api_key_env` overrides which environment variable holds the key; by
-    default the provider's conventional variable is used. Call load_dotenv()
-    before this so values from .env are visible.
-    """
+    def __init__(self, clients: list[LLMClient]):
+        if not clients:
+            raise ValueError("FallbackClient requires at least one client.")
+        self.clients = clients
+
+    async def generate_structured(self, prompt: str, schema: type[T]) -> T:
+        total_clients = len(self.clients)
+        for index, client in enumerate(self.clients):
+            try:
+                logger.info(
+                    "Attempting generation with client %d/%d (%s)...",
+                    index + 1,
+                    total_clients,
+                    client.__class__.__name__,
+                )
+                return await client.generate_structured(prompt, schema)
+            except FALLBACK_ERRORS as exc:
+                # Only provider/output failures fall through to the next
+                # client; programming errors propagate immediately.
+                if index == total_clients - 1:
+                    logger.error("All fallback clients failed. Raising final exception.")
+                    raise
+                logger.warning(
+                    "Client %d/%d failed with %s: %s. Falling back to next client...",
+                    index + 1,
+                    total_clients,
+                    type(exc).__name__,
+                    exc,
+                )
+
+        raise RuntimeError("unreachable")  # pragma: no cover
+
+
+def make_client(model_spec: str, api_key_env: str | None = None) -> LLMClient:
     provider, sep, model = model_spec.partition("/")
     if not sep:
-        # Backwards compatibility with the old bare "--model gemini-3.8-flash".
         logger.warning(
             "Model spec '%s' has no provider prefix; assuming '%s/'.",
             model_spec,
@@ -235,8 +269,50 @@ def make_client(model_spec: str, api_key_env: str | None = None) -> LLMClient:
     env_name = api_key_env or entry["key_env"]
     api_key = os.getenv(env_name)
     if not api_key:
-        raise ValueError(f"{env_name} is not set in the environment or .env file.")
+        raise MissingAPIKeyError(
+            f"{env_name} is not set in the environment or .env file."
+        )
 
     if "base_url" in entry:
         return OpenAICompatClient(model, api_key, entry["base_url"])
     return GeminiClient(model, api_key)
+
+
+def make_fallback_client(
+    model_specs: list[str] | None = None, api_key_env: str | None = None
+) -> LLMClient:
+    """
+    Builds a FallbackClient using a specified list of models, or defaults
+    to Gemini first, followed by DeepSeek.
+
+    Specs whose API key is missing are skipped with a warning, so a missing
+    backup key never breaks the primary. Invalid specs still raise.
+
+    `api_key_env` overrides the key env var and is only allowed with a single
+    spec, since one key cannot be valid for several providers.
+    """
+    specs = model_specs or DEFAULT_FALLBACK_CHAIN
+
+    if api_key_env and len(specs) > 1:
+        raise ValueError(
+            "api_key_env can only be used with a single model spec; "
+            f"got {len(specs)} specs. Set each provider's own key env var instead."
+        )
+
+    clients: list[LLMClient] = []
+    missing: list[str] = []
+    for spec in specs:
+        try:
+            clients.append(make_client(spec, api_key_env))
+        except MissingAPIKeyError as exc:
+            missing.append(f"{spec} ({exc})")
+            logger.warning("Skipping '%s' in fallback chain: %s", spec, exc)
+
+    if not clients:
+        raise MissingAPIKeyError(
+            "No usable model in fallback chain; missing API keys for: "
+            + "; ".join(missing)
+        )
+    if len(clients) == 1:
+        return clients[0]
+    return FallbackClient(clients)
