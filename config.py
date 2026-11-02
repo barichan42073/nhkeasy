@@ -60,6 +60,7 @@ class PipelineConfig:
     combined_mp3_email: str = os.getenv("COMBINED_MP3_EMAIL", "")
     feed_source: str | None = None
     api_key_env: str | None = None  # env var holding the LLM API key
+    reprocess: bool = False  # ignore processed history and leave it unchanged
 
     @property
     def cutoff_date(self) -> datetime:
@@ -142,7 +143,7 @@ def parse_arguments() -> PipelineConfig:
     parser.add_argument(
         "--no-audio",
         action="store_true",
-        help="Skip generation of slowed-down audio MP3s.",
+        help="Skip all audio: no slowed MP3s, no combined MP3, no audio email.",
     )
     parser.add_argument(
         "--keep-slow-mp3",
@@ -203,6 +204,14 @@ def parse_arguments() -> PipelineConfig:
         help="Use existing staged analysis JSON files if available.",
     )
     parser.add_argument(
+        "--reprocess",
+        action="store_true",
+        help="Process eligible articles even if they are already in the "
+        "processed history, and do not record them in it. Lets you rerun the "
+        "same article repeatedly (e.g. while tuning EPUB formatting) without "
+        "editing processed_history.json. Implies --no-anki.",
+    )
+    parser.add_argument(
         "--verbose",
         action="store_true",
         help="Enable verbose logging.",
@@ -241,7 +250,7 @@ def parse_arguments() -> PipelineConfig:
         no_audio=args.no_audio,
         keep_slow_mp3=args.keep_slow_mp3,
         only_slowrecord=args.only_slowrecord,
-        no_anki=args.no_anki,
+        no_anki=args.no_anki or args.reprocess,  # --reprocess implies --no-anki
         anki_output_dir=args.anki_output_dir,
         send_anki_to_app=args.send_anki_to_app,
         no_kindle=args.no_kindle,
@@ -253,4 +262,5 @@ def parse_arguments() -> PipelineConfig:
         verbose=args.verbose,
         feed_source=args.feed_source,
         api_key_env=args.api_key_env,
+        reprocess=args.reprocess,
     )

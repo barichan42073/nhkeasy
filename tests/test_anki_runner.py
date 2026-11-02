@@ -77,17 +77,14 @@ def test_setup_anki_manager_returns_none_when_no_anki():
     assert result is None
 
 
-def test_setup_anki_manager_exits_when_genanki_missing():
-    config = Mock(no_anki=False)
+def test_setup_anki_manager_skips_import_when_genanki_missing():
+    config = Mock(no_anki=False, send_anki_to_app=True)
 
-    with patch.object(anki_runner.anki_generator, "genanki", None), \
-         patch.object(anki_runner.sys, "exit", side_effect=SystemExit(1)) as mock_exit:
-        try:
-            anki_runner._setup_anki_manager(config)
-        except SystemExit:
-            pass
+    with patch.object(anki_runner.anki_generator, "genanki", None):
+        result = anki_runner._setup_anki_manager(config)
 
-    mock_exit.assert_called_once_with(1)
+    assert result is None
+    assert config.send_anki_to_app is False
 
 
 def test_setup_anki_manager_disables_send_when_ankiwebmanager_missing():
@@ -101,19 +98,16 @@ def test_setup_anki_manager_disables_send_when_ankiwebmanager_missing():
     assert config.send_anki_to_app is False
 
 
-def test_setup_anki_manager_exits_when_env_vars_missing():
+def test_setup_anki_manager_skips_import_when_env_vars_missing():
     config = Mock(no_anki=False, send_anki_to_app=True)
 
     with patch.object(anki_runner.anki_generator, "genanki", object()), \
          patch.object(anki_runner, "AnkiWebManager", MagicMock()), \
-         patch.object(anki_runner.os, "getenv", return_value=None), \
-         patch.object(anki_runner.sys, "exit", side_effect=SystemExit(1)) as mock_exit:
-        try:
-            anki_runner._setup_anki_manager(config)
-        except SystemExit:
-            pass
+         patch.object(anki_runner.os, "getenv", return_value=None):
+        result = anki_runner._setup_anki_manager(config)
 
-    mock_exit.assert_called_once_with(1)
+    assert result is None
+    assert config.send_anki_to_app is False
 
 
 def test_setup_anki_manager_happy_path():
@@ -245,6 +239,65 @@ def test_generate_and_deliver_happy_path_with_send():
     fake_anki_web_manager.import_and_sync.assert_called_once_with(
         str(fake_package_path), with_scheduling=False
     )
+
+
+# ---------------------------------------------------------------------------
+# Known-word filtering in generate_and_deliver_daily_anki_package
+# ---------------------------------------------------------------------------
+
+def _daily_package_patches(master, gen_return):
+    """Patches shared by the known-word tests (real split/select/update-shaping)."""
+    return (
+        patch.object(anki_runner.article_manager, "load_unique_vocab", return_value=master),
+        patch.object(anki_runner.anki_pipeline, "build_daily_anki_package_config", return_value=Mock()),
+        patch.object(anki_runner.anki_generator, "generate_anki_package", return_value=gen_return),
+        patch.object(anki_runner.article_manager, "update_unique_vocab"),
+        patch.object(anki_runner.article_manager, "save_unique_vocab"),
+    )
+
+
+def test_generate_and_deliver_skips_known_words_and_counts_them():
+    config = Mock(no_anki=False, send_anki_to_app=False, unique_vocab_json=Path("/tmp/uv.json"))
+    pool = [{"word": "安全", "article_title": "A"}, {"word": "守る", "article_title": "A"}]
+    master = {"安全": {"word": "安全", "occurrence_count": 1}}
+
+    p_load, p_cfg, p_gen, p_update, p_save = _daily_package_patches(master, Path("/tmp/daily.apkg"))
+    with p_load, p_cfg, p_gen as mock_gen, p_update as mock_update, p_save as mock_save:
+        asyncio.run(anki_runner.generate_and_deliver_daily_anki_package(pool, config))
+
+    assert [v["word"] for v in mock_gen.call_args.args[0]] == ["守る"]
+    # once for the known word's recurrence counter, once for the new word
+    assert mock_update.call_count == 2
+    mock_save.assert_called_once()
+
+
+def test_generate_and_deliver_builds_no_package_when_all_words_known():
+    config = Mock(no_anki=False, send_anki_to_app=True, unique_vocab_json=Path("/tmp/uv.json"))
+    pool = [{"word": "安全", "article_title": "A"}]
+    master = {"安全": {"word": "安全", "occurrence_count": 1}}
+
+    p_load, p_cfg, p_gen, p_update, p_save = _daily_package_patches(master, Path("/tmp/daily.apkg"))
+    with p_load, p_cfg, p_gen as mock_gen, p_update as mock_update, p_save as mock_save, \
+         patch.object(anki_runner, "_setup_anki_manager") as mock_setup_manager:
+        asyncio.run(anki_runner.generate_and_deliver_daily_anki_package(pool, config))
+
+    mock_gen.assert_not_called()
+    mock_setup_manager.assert_not_called()
+    mock_update.assert_called_once()   # recurrence counter only
+    mock_save.assert_called_once()
+
+
+def test_generate_and_deliver_does_not_record_new_words_when_package_fails():
+    config = Mock(no_anki=False, send_anki_to_app=False, unique_vocab_json=Path("/tmp/uv.json"))
+    pool = [{"word": "安全", "article_title": "A"}, {"word": "守る", "article_title": "A"}]
+    master = {"安全": {"word": "安全", "occurrence_count": 1}}
+
+    p_load, p_cfg, p_gen, p_update, p_save = _daily_package_patches(master, None)
+    with p_load, p_cfg, p_gen, p_update as mock_update, p_save:
+        asyncio.run(anki_runner.generate_and_deliver_daily_anki_package(pool, config))
+
+    recorded = [[v["word"] for v in call.args[1]] for call in mock_update.call_args_list]
+    assert recorded == [["安全"]]
 
 
 # ---------------------------------------------------------------------------

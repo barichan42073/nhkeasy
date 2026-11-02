@@ -36,13 +36,18 @@ def _setup_anki_manager(config: PipelineConfig):
     Imperative-shell function: initializes and returns an AnkiWebManager
     instance based on configuration. Performs environment reads and opens
     a local database connection.
+
+    Never exits the process: on a missing dependency or credential it logs
+    an error and returns None, so the rest of the run (audio, history) still
+    completes and only the AnkiWeb import is skipped.
     """
     if config.no_anki:
         return None
 
     if anki_generator.genanki is None:
-        logger.error("'genanki' module not installed. Skipping Anki package generation.")
-        sys.exit(1)
+        logger.error("'genanki' module not installed; skipping Anki import.")
+        config.send_anki_to_app = False
+        return None
 
     if AnkiWebManager is None:
         config.send_anki_to_app = False
@@ -52,8 +57,12 @@ def _setup_anki_manager(config: PipelineConfig):
         anki_web_username = os.getenv("ANKIWEB_USER")
         anki_web_password = os.getenv("ANKIWEB_PASS")
         if not anki_web_username or not anki_web_password:
-            logger.error("ANKIWEB_USER and/or ANKIWEB_PASS variables not set.")
-            sys.exit(1)
+            logger.error(
+                "ANKIWEB_USER and/or ANKIWEB_PASS variables not set; skipping "
+                "AnkiWeb import (the .apkg package was still saved)."
+            )
+            config.send_anki_to_app = False
+            return None
         try:
             return AnkiWebManager(
                 username=anki_web_username,
@@ -95,9 +104,10 @@ async def generate_and_deliver_daily_anki_package(
     config: PipelineConfig,
 ) -> None:
     """
-    Imperative-shell function: uses the functional core to select/shape the
-    daily vocabulary pool and package config, then performs the actual
-    .apkg file generation, unique_vocab.json persistence, and AnkiWeb sync.
+    Imperative-shell function: uses the functional core to drop words already
+    in the master vocabulary, select/shape the daily vocabulary pool and
+    package config, then performs the actual .apkg file generation,
+    unique_vocab.json persistence, and AnkiWeb sync.
     """
     if config.no_anki:
         logger.info("Anki processing is disabled (--no-anki).")
@@ -107,33 +117,50 @@ async def generate_and_deliver_daily_anki_package(
         logger.info("No vocabulary collected across all new articles for Anki package.")
         return
 
-    unique_daily_vocab = anki_pipeline.select_daily_vocab(
-        all_filtered_vocabulary, max_words=12
-    )
-    current_date_tag = anki_pipeline.build_daily_tag()
-
-    logger.info(
-        "Generating combined daily Anki package for %d vocabulary words...",
-        len(unique_daily_vocab),
+    master_vocab = article_manager.load_unique_vocab(config.unique_vocab_json)
+    new_vocab, known_vocab = anki_pipeline.split_known_vocab(
+        all_filtered_vocabulary, master_vocab
     )
 
-    anki_config = anki_pipeline.build_daily_anki_package_config(config)
-
-    combined_anki_package_path = anki_generator.generate_anki_package(
-        unique_daily_vocab, anki_config, card_tags=[current_date_tag]
-    )
-
-    if combined_anki_package_path:
-        master_vocab = article_manager.load_unique_vocab(config.unique_vocab_json)
-        new_items_for_master = anki_pipeline.build_unique_vocab_updates(
-            unique_daily_vocab
-        )
-        article_manager.update_unique_vocab(master_vocab, new_items_for_master)
-        article_manager.save_unique_vocab(master_vocab, config.unique_vocab_json)
+    if known_vocab:
         logger.info(
-            "Updated master unique_vocab.json with %d new words.",
+            "Skipping %d vocabulary word(s) already in unique_vocab.json.",
+            len(known_vocab),
+        )
+        # Words seen again still count towards their recurrence counter.
+        article_manager.update_unique_vocab(
+            master_vocab, anki_pipeline.build_unique_vocab_updates(known_vocab)
+        )
+
+    combined_anki_package_path = None
+    if new_vocab:
+        unique_daily_vocab = anki_pipeline.select_daily_vocab(new_vocab, max_words=12)
+        current_date_tag = anki_pipeline.build_daily_tag()
+
+        logger.info(
+            "Generating combined daily Anki package for %d vocabulary words...",
             len(unique_daily_vocab),
         )
+
+        anki_config = anki_pipeline.build_daily_anki_package_config(config)
+
+        combined_anki_package_path = anki_generator.generate_anki_package(
+            unique_daily_vocab, anki_config, card_tags=[current_date_tag]
+        )
+
+        if combined_anki_package_path:
+            added = article_manager.update_unique_vocab(
+                master_vocab,
+                anki_pipeline.build_unique_vocab_updates(unique_daily_vocab),
+            )
+            logger.info("Added %d new words to master unique_vocab.json.", added)
+    else:
+        logger.info(
+            "No new vocabulary for an Anki package: every collected word is already known."
+        )
+
+    if known_vocab or combined_anki_package_path:
+        article_manager.save_unique_vocab(master_vocab, config.unique_vocab_json)
 
     if config.send_anki_to_app and combined_anki_package_path:
         anki_web_manager = _setup_anki_manager(config)

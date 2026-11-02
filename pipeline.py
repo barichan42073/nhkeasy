@@ -182,8 +182,13 @@ async def main():
     processed_history = article_manager.load_processed_history(
         config.processed_history_json
     )
+    if config.reprocess:
+        logger.info(
+            "--reprocess: ignoring processed history (it will not be updated) "
+            "and skipping Anki."
+        )
     articles_to_process, articles_to_process_ids = _load_and_filter_articles(
-        config, processed_history
+        config, set() if config.reprocess else processed_history
     )
 
     if not articles_to_process:
@@ -224,7 +229,7 @@ async def main():
         await audio_runner.deliver_combined_audio(combined_audio_path, config)
 
     # Update processed history JSON
-    if state.newly_processed_article_ids:
+    if state.newly_processed_article_ids and not config.reprocess:
         processed_history.update(state.newly_processed_article_ids)
         article_manager.save_processed_history(
             processed_history, config.processed_history_json
