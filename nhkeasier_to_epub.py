@@ -532,7 +532,7 @@ async def process_article_to_epub(
     html_content: str | None = None,
     output_path: Path = Path("output.epub"),
     keep_md: bool = False,
-    model_name: str = "gemini-2.5-flash",
+    model_name: str = "gemini-3.8-flash",
     article_title_for_metadata: str | None = None,
     system_prompt_path: Path = PROMPT_FILE_PATH,
     analysis: ArticleAnalysis | None = None,
@@ -633,8 +633,8 @@ async def main():
     )
     parser.add_argument(
         "--model",
-        default="gemini-2.5-flash",
-        help="Specify the Gemini model to use (default: gemini-2.5-flash)",
+        default="gemini-3.8-flash",
+        help="Specify the Gemini model to use (default: gemini-3.8-flash)",
     )
     parser.add_argument(
         "--local-html",

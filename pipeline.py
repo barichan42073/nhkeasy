@@ -195,8 +195,11 @@ async def main():
     setup_logging(config.verbose)
 
     # Build the LLM client once, up front, so a bad --model spec or a missing
-    # API key fails immediately rather than on the first article.
-    llm_client = llm.make_client(config.model_name, config.api_key_env)
+    # API key fails immediately rather than on the first article. --model may
+    # be a comma-separated chain; models are tried in order per request.
+    llm_client = llm.make_fallback_client(
+        llm.parse_model_chain(config.model_name), config.api_key_env
+    )
 
     # Call fetch_rss to ensure articles.json is up-to-date
     fetch_rss.save_feed_data(

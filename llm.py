@@ -7,6 +7,10 @@ Choose a provider/model with a spec string such as:
     gemini/gemini-3.8-flash
     deepseek/deepseek-chat
     groq/<model-name>
+
+or a comma-separated chain tried in order until one succeeds:
+
+    gemini/gemini-3.8-flash,deepseek/deepseek-chat
 """
 
 import copy
@@ -118,11 +122,15 @@ class GeminiClient:
 
             usage = getattr(response, "usage_metadata", None)
             if usage:
+                # Thinking models bill internal reasoning as thoughts_token_count,
+                # which is part of the total but not of the completion count.
                 logger.info(
-                    "Gemini token usage: %d total (%d prompt, %d completion).",
-                    usage.total_token_count,
-                    usage.prompt_token_count,
-                    usage.candidates_token_count,
+                    "Gemini token usage: %d total (%d prompt, %d completion, "
+                    "%d thinking).",
+                    usage.total_token_count or 0,
+                    usage.prompt_token_count or 0,
+                    usage.candidates_token_count or 0,
+                    getattr(usage, "thoughts_token_count", None) or 0,
                 )
 
             try:
@@ -226,10 +234,11 @@ class FallbackClient:
         for index, client in enumerate(self.clients):
             try:
                 logger.info(
-                    "Attempting generation with client %d/%d (%s)...",
+                    "Attempting generation with client %d/%d (%s '%s')...",
                     index + 1,
                     total_clients,
                     client.__class__.__name__,
+                    getattr(client, "model", "?"),
                 )
                 return await client.generate_structured(prompt, schema)
             except FALLBACK_ERRORS as exc:
@@ -276,6 +285,15 @@ def make_client(model_spec: str, api_key_env: str | None = None) -> LLMClient:
     if "base_url" in entry:
         return OpenAICompatClient(model, api_key, entry["base_url"])
     return GeminiClient(model, api_key)
+
+
+def parse_model_chain(chain: str) -> list[str]:
+    """
+    Splits a comma-separated model chain such as
+    "gemini/gemini-3.8-flash, deepseek/deepseek-chat" into a list of specs,
+    in order. Whitespace and empty entries are ignored.
+    """
+    return [spec.strip() for spec in chain.split(",") if spec.strip()]
 
 
 def make_fallback_client(

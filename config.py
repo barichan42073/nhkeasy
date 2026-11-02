@@ -13,6 +13,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+import llm
+
 # Load .env once, at import time and BEFORE PipelineConfig is defined, because
 # the dataclass defaults below (KINDLE_EMAIL, COMBINED_MP3_EMAIL) read the
 # environment when the class is created. Real environment variables win over
@@ -39,7 +41,9 @@ class PipelineConfig:
     vocab_dir: Path
     anki_local_db_path: Path
     days_back: int
-    model_name: str  # provider-qualified spec, e.g. "gemini/gemini-3.8-flash"
+    # Provider-qualified spec, or a comma-separated fallback chain, e.g.
+    # "gemini/gemini-3.8-flash,deepseek/deepseek-chat"
+    model_name: str
     keep_md: bool
     max_articles: int | None
     no_audio: bool
@@ -112,18 +116,20 @@ def parse_arguments() -> PipelineConfig:
     )
     parser.add_argument(
         "--model",
-        default="gemini/gemini-3.8-flash",
+        default=",".join(llm.DEFAULT_FALLBACK_CHAIN),
         dest="model_name",
         help="LLM to use as <provider>/<model> (providers: gemini, deepseek, "
-        "groq), e.g. deepseek/deepseek-chat "
-        "(default: gemini/gemini-3.8-flash).",
+        "groq), or a comma-separated chain tried in order if one fails, e.g. "
+        "gemini/gemini-3.8-flash,deepseek/deepseek-chat. Models whose API key "
+        "is missing are skipped with a warning "
+        f"(default: {','.join(llm.DEFAULT_FALLBACK_CHAIN)}).",
     )
     parser.add_argument(
         "--api-key-env",
         default=None,
         help="Name of the environment variable (e.g. from .env) holding the API "
         "key. Defaults to the provider's usual variable, such as GEMINI_API_KEY "
-        "or DEEPSEEK_API_KEY.",
+        "or DEEPSEEK_API_KEY. Only valid with a single --model, not a chain.",
     )
     parser.add_argument(
         "--keep-md",
