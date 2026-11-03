@@ -200,6 +200,9 @@ async def main():
     llm_client = llm.make_fallback_client(
         llm.parse_model_chain(config.model_name), config.api_key_env
     )
+    # One cheap metadata call per model: a mistyped model name stops the run
+    # here, and models whose key is rejected are dropped from the chain.
+    await llm.preflight(llm_client)
 
     # Call fetch_rss to ensure articles.json is up-to-date
     fetch_rss.save_feed_data(

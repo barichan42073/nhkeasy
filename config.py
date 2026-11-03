@@ -42,7 +42,7 @@ class PipelineConfig:
     anki_local_db_path: Path
     days_back: int
     # Provider-qualified spec, or a comma-separated fallback chain, e.g.
-    # "gemini/gemini-3.8-flash,deepseek/deepseek-chat"
+    # "gemini/gemini-3.8-flash,deepseek/deepseek-flash"
     model_name: str
     keep_md: bool
     max_articles: int | None
@@ -120,7 +120,7 @@ def parse_arguments() -> PipelineConfig:
         dest="model_name",
         help="LLM to use as <provider>/<model> (providers: gemini, deepseek, "
         "groq), or a comma-separated chain tried in order if one fails, e.g. "
-        "gemini/gemini-3.8-flash,deepseek/deepseek-chat. Models whose API key "
+        "gemini/gemini-3.8-flash,deepseek/deepseek-flash. Models whose API key "
         "is missing are skipped with a warning "
         f"(default: {','.join(llm.DEFAULT_FALLBACK_CHAIN)}).",
     )
