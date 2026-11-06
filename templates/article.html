@@ -22,7 +22,22 @@
     .container { display: flex; gap: 30px; max-width: 1200px; margin: 0 auto; padding: 20px; }
     main { flex: 2; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     aside { flex: 1; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 20px; max-height: 90vh; overflow-y: auto; }
-    
+    /* Let both columns shrink below their content width instead of overflowing. */
+    main, aside { min-width: 0; }
+
+    /* Tablet: vocab stays beside the article, in a narrower fixed column. */
+    @media (min-width: 701px) and (max-width: 1100px) {
+      .container { gap: 20px; }
+      aside { flex: 0 0 260px; }
+    }
+
+    /* Phone: one column, vocab below the article (aside follows main in the DOM). */
+    @media (max-width: 700px) {
+      .container { flex-direction: column; gap: 16px; padding: 12px; }
+      main { margin: 0; padding: 18px; }
+      aside { position: static; max-height: none; overflow: visible; padding: 18px; }
+    }
+
     ruby rt { font-size: 0.65em; }
 
     /* Dictionary Mode Styles */

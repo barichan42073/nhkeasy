@@ -781,8 +781,11 @@ html.furi-tap ruby.furi-shown rt {
         order: 1;
     }
 
+    /* Date on its own row below the brand and menu, so the menu stays at the
+       right end of the first row at every width up to 700px. */
     .site-head .date {
         order: 2;
+        flex-basis: 100%;
     }
 
     .furi-control {
