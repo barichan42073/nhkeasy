@@ -36,7 +36,7 @@ class ArticleAnalysis(BaseModel):
     title_ja: str = Field(description="Japanese title")
     title_en: str = Field(description="English translation of title")
     kicker: str = Field(
-        description="A short, attention-grabbing phrase or subtitle for the article summary, limited to one concise phrase."
+        description="Short English kicker: at most 8 words, Title Case, a phrase (not a sentence), no trailing full stop."
     )
     sentences: list[SentenceTranslation] = Field(
         description="List of translated sentences"

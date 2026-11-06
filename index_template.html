@@ -2,98 +2,130 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>NHK Easy Reader — {{ current_date_japanese_title | e }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% if is_archive %}
+    <title>アーカイブ — Easy NHK News</title>
+    {% else %}
+    <title>Easy NHK News — {{ current_date_japanese_title | e }}</title>
+    {% endif %}
     <link rel="stylesheet" href="styles.css">
+    <script src="site.js" defer></script>
 </head>
-<body>
-    <header>
-        <div class="head">
-            <div class="logo">NHK<span>やさしい</span>ニュース</div>
-            <div class="date">{{ current_date_japanese | e }}</div>
+<body class="index-page">
+{#- One article card. `lead` makes it the large top story. -#}
+{% macro article_card(article, lead=False) -%}
+    <a class="{{ 'lead' if lead else 'card' }}" href="{{ article.relative_path | e }}"
+       data-article data-search="{{ (article.title ~ ' ' ~ (article.kicker or '')) | lower | e }}">
+        <div class="photo">
+            {% if article.image_url %}
+                <img src="{{ article.image_url | e }}" alt=""
+                     {% if lead %}fetchpriority="high"{% else %}loading="lazy"{% endif %} decoding="async">
+            {% else %}
+                <div class="fallback" aria-hidden="true">EASY NHK NEWS</div>
+            {% endif %}
         </div>
-    </header>
+        <div class="body">
+            {% if article.kicker %}
+                <div class="kicker" lang="en">{{ article.kicker | e }}</div>
+            {% endif %}
+            <h3 class="title">{{ article.title | e }}</h3>
+            <div class="meta">
+                <time datetime="{{ article.date.isoformat() }}">{{ article.date.month }}月{{ article.date.day }}日 {{ article.date.strftime('%H:%M') }}</time>
+                {% if article.reading_minutes %}<span>約{{ article.reading_minutes }}分</span>{% endif %}
+                {% if article.char_count %}<span>{{ article.char_count }}字</span>{% endif %}
+                {% if article.n1_count %}<span class="level" title="N1の単語">N1×{{ article.n1_count }}</span>{% endif %}
+                {% if article.n2_count %}<span class="level" title="N2の単語">N2×{{ article.n2_count }}</span>{% endif %}
+                {% if article.get('new') %}<span class="badge badge-new">NEW</span>{% endif %}
+                <span class="badge badge-read">既読</span>
+            </div>
+        </div>
+    </a>
+{%- endmacro %}
+    {% set header_date = 'アーカイブ' if is_archive else current_date_japanese %}
+    {% with home_href='index.html', show_furigana=False %}{% include "templates/_site_header.html" %}{% endwith %}
 
     <main>
-        {% if lead_article %}
-            <a class="lead" href="{{ lead_article.relative_path | e }}">
-                <div class="photo">
-                    {% if lead_article.image_url %}
-                        <img src="{{ lead_article.image_url | e }}" alt="{{ lead_article.title | e }}">
-                    {% else %}
-                        <div class="fallback">NHK EASY NEWS</div>
-                    {% endif %}
-                    <div class="source">NHK NEWS EASY</div>
-                </div>
-                <div class="body">
-                    {% if lead_article.kicker %}
-                        <div class="kicker">{{ lead_article.kicker | e }}</div>
-                    {% endif %}
-                    <h1>{{ lead_article.title | e }}</h1>
-                    <div class="meta">
-                        {{ lead_article.date.strftime('%Y年%m月%d日 %H:%M') }}
-                        {% if lead_article.get('new') %} ・ NEW{% endif %}
-                    </div>
-                </div>
-            </a>
-        {% endif %}
+        <div class="toolbar">
+            <input type="search" id="filter" placeholder="検索（タイトル・英語の見出し）" aria-label="記事を検索">
+            <label class="toggle"><input type="checkbox" id="hide-read"> 既読を隠す</label>
+        </div>
 
-        {% if today_grid_articles %}
-            <div class="grid">
-                {% for article in today_grid_articles %}
-                    <a class="card" href="{{ article.relative_path | e }}">
-                        <div class="photo">
-                            {% if article.image_url %}
-                                <img src="{{ article.image_url | e }}" alt="{{ article.title | e }}">
-                            {% else %}
-                                <div class="fallback">NHK EASY NEWS</div>
-                            {% endif %}
-                            <div class="source">NHK NEWS EASY</div>
-                        </div>
-                        <div class="body">
-                            {% if article.kicker %}
-                                <div class="kicker">{{ article.kicker | e }}</div>
-                            {% endif %}
-                            <h2>{{ article.title | e }}</h2>
-                            <div class="meta">
-                                {{ article.date.strftime('%Y年%m月%d日 %H:%M') }}
-                                {% if article.get('new') %} ・ NEW{% endif %}
-                            </div>
-                        </div>
-                    </a>
-                {% endfor %}
-            </div>
+        {% if lead_article or today_grid_articles %}
+            <section class="day" data-group aria-labelledby="latest-heading">
+                <h2 class="day-heading" id="latest-heading">最新</h2>
+                {% if lead_article %}{{ article_card(lead_article, lead=True) }}{% endif %}
+                {% if today_grid_articles %}
+                    <div class="grid">
+                        {% for article in today_grid_articles %}{{ article_card(article) }}{% endfor %}
+                    </div>
+                {% endif %}
+            </section>
         {% endif %}
 
         {% for group in older_articles_grouped %}
-            <h2 style="margin-top: 40px;">{{ group.date_japanese | e }}</h2>
-            <div class="grid">
-                {% for article in group.articles %}
-                    <a class="card" href="{{ article.relative_path | e }}">
-                        <div class="photo">
-                            {% if article.image_url %}
-                                <img src="{{ article.image_url | e }}" alt="{{ article.title | e }}">
-                            {% else %}
-                                <div class="fallback">NHK EASY NEWS</div>
-                            {% endif %}
-                            <div class="source">NHK NEWS EASY</div>
-                        </div>
-                        <div class="body">
-                            {% if article.kicker %}
-                                <div class="kicker">{{ article.kicker | e }}</div>
-                            {% endif %}
-                            <h2>{{ article.title | e }}</h2>
-                            <div class="meta">
-                                {{ article.date.strftime('%Y年%m月%d日 %H:%M') }}
-                            </div>
-                        </div>
-                    </a>
-                {% endfor %}
-            </div>
+            <section class="day" data-group aria-labelledby="day-{{ group.date_iso | e }}">
+                <h2 class="day-heading" id="day-{{ group.date_iso | e }}">{{ group.date_japanese | e }}</h2>
+                <div class="grid">
+                    {% for article in group.articles %}{{ article_card(article) }}{% endfor %}
+                </div>
+            </section>
         {% endfor %}
+
+        <p class="empty" id="no-results" hidden>該当する記事はありません。</p>
+
+        {% if is_archive %}
+            <p class="more-link"><a href="index.html">← 最近の記事に戻る</a></p>
+        {% elif archive_groups %}
+            <p class="more-link"><a href="archive.html">{{ index_recent_days }}日より前の記事（アーカイブ）→</a></p>
+        {% endif %}
     </main>
 
     <footer>
-        &copy; {{ current_date_obj.year }} NHK Easy Reader. Generated for personal study use.
+        記事と写真の著作権はNHKにあります（NHK NEWS WEB EASY、nhkeasier.com経由）。個人の学習用に生成したページです。
+        <div class="site-disclaimer" lang="en">Easy NHK News is an independent learning project and is not affiliated with NHK. Articles © NHK.</div>
     </footer>
+
+    <script>
+    (function () {
+        var KEY = 'nhkeasy-read';
+        var read = {};
+        try { read = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) {}
+
+        var items = Array.prototype.slice.call(document.querySelectorAll('[data-article]'));
+        var groups = Array.prototype.slice.call(document.querySelectorAll('[data-group]'));
+        var filter = document.getElementById('filter');
+        var hideRead = document.getElementById('hide-read');
+        var noResults = document.getElementById('no-results');
+
+        items.forEach(function (a) {
+            var path = new URL(a.getAttribute('href'), location.href).pathname;
+            if (read[path]) a.classList.add('is-read');
+        });
+
+        try { hideRead.checked = localStorage.getItem(KEY + '-hide') === '1'; } catch (e) {}
+
+        function apply() {
+            var q = filter.value.trim().toLowerCase();
+            var anyShown = false;
+            items.forEach(function (a) {
+                var show = (!q || a.dataset.search.indexOf(q) !== -1) &&
+                           !(hideRead.checked && a.classList.contains('is-read'));
+                a.hidden = !show;
+                if (show) anyShown = true;
+            });
+            groups.forEach(function (g) {
+                g.hidden = !g.querySelector('[data-article]:not([hidden])');
+            });
+            noResults.hidden = anyShown || items.length === 0;
+        }
+
+        filter.addEventListener('input', apply);
+        hideRead.addEventListener('change', function () {
+            try { localStorage.setItem(KEY + '-hide', hideRead.checked ? '1' : '0'); } catch (e) {}
+            apply();
+        });
+        apply();
+    })();
+    </script>
 </body>
 </html>

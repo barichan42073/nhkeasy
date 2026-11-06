@@ -26,9 +26,13 @@ logger = logging.getLogger(__name__)
 _TEMPLATE_DIR = Path(__file__).resolve().parent
 _INDEX_TEMPLATE_NAME = "index_template.html"
 _MANIFEST_FILENAME = "manifest.json"
+_ARCHIVE_FILENAME = "archive.html"
 _STYLES_FILENAME = "styles.css"
 # The one stylesheet, anchored to the project folder (not the working directory).
 _STYLES_SOURCE = _TEMPLATE_DIR / _STYLES_FILENAME
+# Shared page script (site menu, furigana modes), copied alongside styles.css.
+_SITE_JS_FILENAME = "site.js"
+_SITE_JS_SOURCE = _TEMPLATE_DIR / _SITE_JS_FILENAME
 
 _WEEKDAY_JA = ["月", "火", "水", "木", "金", "土", "日"]
 
@@ -59,22 +63,29 @@ def _format_japanese_dates(current_date: datetime) -> tuple[str, str]:
 
 
 def _copy_styles_css(config: PipelineConfig) -> None:
-    """Copies the project's styles.css into the HTML output and top-level directories."""
-    source_css = _STYLES_SOURCE
-    if not source_css.is_file():
-        logger.warning("styles.css not found at %s; skipping copy.", source_css)
-        return
-
-    destinations = [config.html_output_dir / _STYLES_FILENAME]
+    """Copies the project's static assets (styles.css, site.js) into the HTML
+    output and top-level directories."""
+    destinations_dirs = [config.html_output_dir]
     top_dir = getattr(config, "nhkeasy_dir", None)
     if top_dir and top_dir != config.html_output_dir:
-        destinations.append(top_dir / _STYLES_FILENAME)
+        destinations_dirs.append(top_dir)
 
-    for destination_css in destinations:
-        try:
-            shutil.copyfile(source_css, destination_css)
-        except OSError:
-            logger.exception("Failed to copy styles.css to %s", destination_css)
+    # Sources are read from the module globals at call time so tests can
+    # point them at temporary files.
+    assets = (
+        (_STYLES_FILENAME, _STYLES_SOURCE),
+        (_SITE_JS_FILENAME, _SITE_JS_SOURCE),
+    )
+    for filename, source in assets:
+        if not source.is_file():
+            logger.warning("%s not found at %s; skipping copy.", filename, source)
+            continue
+        for destination_dir in destinations_dirs:
+            destination = destination_dir / filename
+            try:
+                shutil.copyfile(source, destination)
+            except OSError:
+                logger.exception("Failed to copy %s to %s", filename, destination)
 
 
 def _load_manifest(config: PipelineConfig) -> list[dict]:
@@ -192,4 +203,29 @@ async def write_smartreader_index(
     except OSError:
         logger.exception("Failed to write index page to %s", index_path)
 
+    _write_archive_page(template, render_data["template_data"], index_path.parent)
+
     _save_manifest(config, render_data["manifest_for_save"])
+
+
+def _write_archive_page(template, template_data: dict, output_dir: Path) -> None:
+    """Renders articles older than the index's window to archive.html, using
+    the index template. Does nothing while there is nothing to archive."""
+    archive_groups = template_data.get("archive_groups") or []
+    if not archive_groups:
+        return
+    archive_html = template.render(
+        **{
+            **template_data,
+            "is_archive": True,
+            "lead_article": None,
+            "today_grid_articles": [],
+            "older_articles_grouped": archive_groups,
+        }
+    )
+    archive_path = output_dir / _ARCHIVE_FILENAME
+    try:
+        archive_path.write_text(archive_html, encoding="utf-8")
+        logger.info("Wrote archive page -> %s", archive_path)
+    except OSError:
+        logger.exception("Failed to write archive page to %s", archive_path)

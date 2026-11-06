@@ -2,8 +2,21 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>{{ analysis.title_ja }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ analysis.title_ja }} — Easy NHK News</title>
+  <script>
+    /* Apply the saved furigana mode before first paint (see site.js). */
+    (function () {
+      var m = 'tap';
+      try {
+        var s = localStorage.getItem('nhkeasy-furigana');
+        if (s === 'all' || s === 'tap' || s === 'off') m = s;
+      } catch (e) {}
+      document.documentElement.classList.add('furi-' + m);
+    })();
+  </script>
   <link rel="stylesheet" href="styles.css">
+  <script src="site.js" defer></script>
   <style>
     body { font-family: sans-serif; margin: 0; padding: 0; background: #f9f9f9; }
     .container { display: flex; gap: 30px; max-width: 1200px; margin: 0 auto; padding: 20px; }
@@ -11,8 +24,6 @@
     aside { flex: 1; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 20px; max-height: 90vh; overflow-y: auto; }
     
     ruby rt { font-size: 0.65em; }
-    .hover-furigana ruby rt { opacity: 0; transition: opacity 0.15s ease-in-out; }
-    .hover-furigana ruby:hover rt { opacity: 1; }
 
     /* Dictionary Mode Styles */
     body.dictionary-active .article-content ruby.dict-word-target,
@@ -33,13 +44,9 @@
   </style>
 </head>
 <body>
-  <header id="article-header">
-    <div class="head">
-      <div class="logo"><span>NHK</span> EASY NEWS</div>
-    </div>
-  </header>
+  {% with home_href='../index.html', header_id='article-header', show_furigana=True %}{% include "_site_header.html" %}{% endwith %}
   <div class="container">
-    <main class="hover-furigana">
+    <main>
       <h1>{{ analysis.title_ja }}</h1>
       <p>
         <a href="../index.html">Back to Articles Index</a>
@@ -88,7 +95,19 @@
     </aside>
   </div>
 
+  <footer>
+    <div class="site-disclaimer" lang="en">Easy NHK News is an independent learning project and is not affiliated with NHK. Articles © NHK.</div>
+  </footer>
+
   <script>
+    // Mark this article as read for the index page (same key as index_template.html).
+    try {
+      const readKey = 'nhkeasy-read';
+      const read = JSON.parse(localStorage.getItem(readKey) || '{}') || {};
+      read[location.pathname] = Date.now();
+      localStorage.setItem(readKey, JSON.stringify(read));
+    } catch (e) {}
+
     let dictionaryMode = false;
     const dictionaryTooltip = document.getElementById('dictionary-tooltip');
     const articleContent = document.querySelector('.article-content');

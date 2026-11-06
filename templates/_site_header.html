@@ -1,0 +1,55 @@
+{#- Shared site header: brand, optional date, optional furigana control, menu.
+    Context it reads (all optional):
+      home_href       link for the brand (default "index.html")
+      header_id       id for the <header> element
+      header_date     text shown beside the brand (index page)
+      show_furigana   true on article pages: shows the Always / On tap / Off control
+-#}
+<header class="site-header"{% if header_id %} id="{{ header_id }}"{% endif %}>
+    <div class="head site-head">
+        <a class="brand" href="{{ home_href or 'index.html' }}">
+            <span class="brand-mark" aria-hidden="true">易</span>
+            <span class="brand-name" lang="en">Easy NHK News</span>
+        </a>
+        {% if header_date %}<div class="date">{{ header_date }}</div>{% endif %}
+
+        {% if show_furigana %}
+        <div class="furi-control" role="group" aria-label="Furigana" lang="en">
+            <span class="furi-title">Furigana</span>
+            <div class="furi-buttons">
+                <button type="button" class="furi-btn" data-furi="all" aria-pressed="false" title="Furigana always on">
+                    <span class="furi-icon" aria-hidden="true"><span class="furi-icon-rt">じ</span><span class="furi-icon-kanji">字</span></span>
+                    <span class="furi-label">Always</span>
+                </button>
+                <button type="button" class="furi-btn" data-furi="tap" aria-pressed="false" title="Furigana when you hover or tap a word">
+                    <span class="furi-icon" aria-hidden="true"><span class="furi-icon-rt is-blank">じ</span><span class="furi-icon-kanji is-dotted">字</span></span>
+                    <span class="furi-label">On tap</span>
+                </button>
+                <button type="button" class="furi-btn" data-furi="off" aria-pressed="false" title="Furigana off">
+                    <span class="furi-icon" aria-hidden="true"><span class="furi-icon-rt is-blank">じ</span><span class="furi-icon-kanji">字</span></span>
+                    <span class="furi-label">Off</span>
+                </button>
+            </div>
+            <span class="furi-hint">Press <kbd>F</kbd> to switch</span>
+        </div>
+        {% endif %}
+
+        <button type="button" class="menu-button" aria-label="Menu" aria-expanded="false" aria-controls="site-menu">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
+        </button>
+    </div>
+
+    <div class="site-menu" id="site-menu" lang="en" hidden>
+        <section aria-labelledby="menu-about">
+            <h2 id="menu-about">About</h2>
+            <p>Easy NHK News adds a vocabulary list and English translations of every sentence to the daily NHK News Web Easy articles. You can read each article with furigana always on, shown when you tap a word, or switched off.</p>
+            <p>Coming later if there's interest: slowed-down versions of the NHK audio, Anki flashcards for the vocabulary, and EPUB editions of the articles (with the same vocab list and translations). If you'd like any of these, let me know on Reddit at <a href="https://www.reddit.com/r/LearnJapanese/" rel="noopener">r/LearnJapanese</a>.</p>
+            <p class="menu-note">Easy NHK News is an independent learning project and is not affiliated with, endorsed by, or sponsored by NHK (Japan Broadcasting Corporation). All articles and audio are © NHK.</p>
+        </section>
+        <section aria-labelledby="menu-credits">
+            <h2 id="menu-credits">Credits</h2>
+            <p><strong>NHK</strong> for publishing the daily articles on <a href="https://www3.nhk.or.jp/news/easy/" rel="noopener">NHK News Web Easy</a>.</p>
+            <p><strong>The creator of <a href="https://www.nhkeasier.com" rel="noopener">nhkeasier.com</a></strong> for providing clean HTML versions of the articles, and for the ideas on how to build a tool for non-native Japanese speakers.</p>
+        </section>
+    </div>
+</header>

@@ -43,6 +43,7 @@ def test_format_japanese_dates_monday():
 def test_copy_styles_css_success(tmp_path, monkeypatch):
     source = tmp_path / "styles.css"
     monkeypatch.setattr(html_runner, "_STYLES_SOURCE", source)
+    monkeypatch.setattr(html_runner, "_SITE_JS_SOURCE", tmp_path / "missing-site.js")
     source.write_text("body { color: red; }", encoding="utf-8")
 
     output_dir = tmp_path / "output"
@@ -59,6 +60,7 @@ def test_copy_styles_css_success(tmp_path, monkeypatch):
 def test_copy_styles_css_with_nhkeasy_dir(tmp_path, monkeypatch):
     source = tmp_path / "styles.css"
     monkeypatch.setattr(html_runner, "_STYLES_SOURCE", source)
+    monkeypatch.setattr(html_runner, "_SITE_JS_SOURCE", tmp_path / "missing-site.js")
     source.write_text("body { color: blue; }", encoding="utf-8")
 
     nhkeasy_dir = tmp_path / "nhkeasy"
@@ -79,6 +81,7 @@ def test_copy_styles_css_with_nhkeasy_dir(tmp_path, monkeypatch):
 
 def test_copy_styles_css_missing_source(tmp_path, monkeypatch):
     monkeypatch.setattr(html_runner, "_STYLES_SOURCE", tmp_path / "styles.css")  # not created
+    monkeypatch.setattr(html_runner, "_SITE_JS_SOURCE", tmp_path / "site.js")  # not created
 
     output_dir = tmp_path / "output"
     output_dir.mkdir()
@@ -98,6 +101,7 @@ def test_styles_source_is_project_root_file():
 def test_copy_styles_css_copy_error(tmp_path, monkeypatch):
     source = tmp_path / "styles.css"
     monkeypatch.setattr(html_runner, "_STYLES_SOURCE", source)
+    monkeypatch.setattr(html_runner, "_SITE_JS_SOURCE", tmp_path / "missing-site.js")
     source.write_text("body {}", encoding="utf-8")
 
     output_dir = tmp_path / "output"
@@ -601,3 +605,49 @@ def test_compute_index_render_data_fewer_than_4_articles():
     assert [a["id"] for a in template_data["today_grid_articles"]] == ["art-1", "art-0"]
     assert template_data["older_articles_grouped"] == []
 
+
+
+def test_write_smartreader_index_writes_archive_page(tmp_path, monkeypatch):
+    nhkeasy_dir = tmp_path / "nhkeasy"
+    output_dir = nhkeasy_dir / "html_output"
+    output_dir.mkdir(parents=True)
+    config = SimpleNamespace(nhkeasy_dir=nhkeasy_dir, html_output_dir=output_dir)
+    monkeypatch.setattr(html_runner, "_copy_styles_css", lambda cfg: None)
+
+    manifest = [
+        {"id": f"https://nhkeasier.com/story/{n}/", "title": f"Recent {n}",
+         "date": "2026-11-02T03:00:00+00:00", "relative_path": f"story_{n}.html",
+         "image_url": f"https://example.com/{n}.jpg"}
+        for n in range(100, 105)
+    ] + [{"id": "https://nhkeasier.com/story/50/", "title": "Very Old",
+          "date": "2026-09-01T03:00:00+00:00", "relative_path": "story_50.html"}]
+    (output_dir / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+    asyncio.run(html_runner.write_smartreader_index(config, set(), []))
+
+    index = (nhkeasy_dir / "index.html").read_text(encoding="utf-8")
+    archive = (nhkeasy_dir / "archive.html").read_text(encoding="utf-8")
+    assert "Very Old" not in index and 'href="archive.html"' in index
+    assert "Very Old" in archive and "Recent 104" not in archive
+    assert 'name="viewport"' in index
+    assert 'loading="lazy"' in index
+
+
+def test_copy_styles_css_also_copies_site_js(tmp_path, monkeypatch):
+    styles = tmp_path / "styles.css"
+    styles.write_text("body {}", encoding="utf-8")
+    site_js = tmp_path / "site.js"
+    site_js.write_text("console.log(1);", encoding="utf-8")
+    monkeypatch.setattr(html_runner, "_STYLES_SOURCE", styles)
+    monkeypatch.setattr(html_runner, "_SITE_JS_SOURCE", site_js)
+
+    nhkeasy_dir = tmp_path / "nhkeasy"
+    output_dir = nhkeasy_dir / "html_output"
+    output_dir.mkdir(parents=True)
+    html_runner._copy_styles_css(
+        SimpleNamespace(nhkeasy_dir=nhkeasy_dir, html_output_dir=output_dir)
+    )
+
+    for d in (output_dir, nhkeasy_dir):
+        assert (d / "site.js").read_text(encoding="utf-8") == "console.log(1);"
+        assert (d / "styles.css").read_text(encoding="utf-8") == "body {}"
