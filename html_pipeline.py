@@ -133,6 +133,30 @@ def _fix_article_image_urls(
     return raw_html_content, article_image_url
 
 
+def article_file_stem(article: dict) -> str:
+    """'<title>_<id>' as used for the staged HTML ('<stem>.html') and the
+    analysis JSON ('<stem>_analysis.json'). Pure function."""
+    article_id = article.get("id", article["link"])
+    article_title = article.get("title", "Untitled Article")
+    return f"{sanitize_filename(article_title)}_{sanitize_filename(article_id)}"
+
+
+def article_from_manifest_entry(entry: dict) -> dict | None:
+    """Recreates the article fields the HTML pages need (id, link, title,
+    published date, image) from a manifest entry, so pages can be rebuilt
+    without the RSS feed. Returns None if the entry has no id. Pure function."""
+    article_id = entry.get("id")
+    if not article_id:
+        return None
+    return {
+        "id": article_id,
+        "link": entry.get("link") or article_id,
+        "title": entry.get("title", "Untitled Article"),
+        "published": entry.get("date", ""),
+        "image_url": entry.get("image_url"),
+    }
+
+
 @dataclass
 class ArticleHtmlPayload:
     """Pure result of building the interactive HTML page for one article."""

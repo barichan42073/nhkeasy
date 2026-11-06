@@ -194,6 +194,15 @@ async def main():
     config = parse_arguments()
     setup_logging(config.verbose)
 
+    if config.rebuild_html:
+        # Offline: rebuild pages from saved files, before any LLM setup.
+        skipped = await html_runner.rebuild_all_article_pages(config)
+        if skipped:
+            logger.warning(
+                "Not rebuilt (old page kept): %s", "; ".join(skipped)
+            )
+        return
+
     # Build the LLM client once, up front, so a bad --model spec or a missing
     # API key fails immediately rather than on the first article. --model may
     # be a comma-separated chain; models are tried in order per request.

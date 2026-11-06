@@ -63,6 +63,7 @@ class PipelineConfig:
     feed_source: str | None = None
     api_key_env: str | None = None  # env var holding the LLM API key
     reprocess: bool = False  # ignore processed history and leave it unchanged
+    rebuild_html: bool = False  # only rebuild all article pages and the index
 
     @property
     def cutoff_date(self) -> datetime:
@@ -202,6 +203,13 @@ def parse_arguments() -> PipelineConfig:
         "editing processed_history.json. Implies --no-anki.",
     )
     parser.add_argument(
+        "--rebuild-html",
+        action="store_true",
+        help="Only rebuild every article page in the manifest, plus the index "
+        "and archive, from the saved staging HTML and analysis JSON, using the "
+        "current templates. No feed fetch, LLM calls, EPUB, audio or Anki.",
+    )
+    parser.add_argument(
         "--verbose",
         action="store_true",
         help="Enable verbose (DEBUG) logging.",
@@ -252,4 +260,5 @@ def parse_arguments() -> PipelineConfig:
         feed_source=args.feed_source,
         api_key_env=args.api_key_env,
         reprocess=args.reprocess,
+        rebuild_html=args.rebuild_html,
     )

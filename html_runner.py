@@ -19,7 +19,12 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from article_schema import ArticleAnalysis
 from config import PipelineConfig
-from html_pipeline import build_article_html_payload, compute_index_render_data
+from html_pipeline import (
+    article_file_stem,
+    article_from_manifest_entry,
+    build_article_html_payload,
+    compute_index_render_data,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -206,6 +211,72 @@ async def write_smartreader_index(
     _write_archive_page(template, render_data["template_data"], index_path.parent)
 
     _save_manifest(config, render_data["manifest_for_save"])
+
+
+async def rebuild_all_article_pages(config: PipelineConfig) -> list[str]:
+    """
+    Rebuilds every article page listed in the manifest from its staged HTML
+    and saved analysis JSON, using the current templates, then rewrites the
+    index, archive and manifest. Makes no network or LLM calls.
+
+    Pages are written under their current names (story_<n>.html) and the
+    manifest is pointed at them; any older, title-based files are left on
+    disk. Articles whose staged HTML or analysis is missing, or whose page
+    cannot be built, keep their existing page and manifest entry.
+
+    Returns the titles of the articles that were skipped.
+    """
+    rebuilt_metadata: list[dict] = []
+    skipped: list[str] = []
+
+    for entry in _load_manifest(config):
+        article = article_from_manifest_entry(entry)
+        if article is None:
+            logger.warning("Skipping manifest entry with no id: %r", entry)
+            skipped.append(str(entry.get("title", "?")))
+            continue
+        title = article["title"]
+        stem = article_file_stem(article)
+        staged_html_path = config.staging_dir / f"{stem}.html"
+        analysis_path = config.smartreader_dir / f"{stem}_analysis.json"
+
+        missing = [p for p in (staged_html_path, analysis_path) if not p.is_file()]
+        if missing:
+            logger.warning(
+                "Skipping '%s': missing %s",
+                title,
+                ", ".join(str(p) for p in missing),
+            )
+            skipped.append(title)
+            continue
+
+        try:
+            raw_html_content = staged_html_path.read_text(encoding="utf-8")
+            analysis = ArticleAnalysis.model_validate_json(
+                analysis_path.read_text(encoding="utf-8")
+            )
+        except Exception:
+            logger.exception("Skipping '%s': could not read its saved files.", title)
+            skipped.append(title)
+            continue
+
+        before = len(rebuilt_metadata)
+        await write_article_html_output(
+            article, raw_html_content, analysis, config, rebuilt_metadata
+        )
+        if len(rebuilt_metadata) == before:
+            skipped.append(title)
+
+    logger.info(
+        "Rebuilt %d article page(s); skipped %d.", len(rebuilt_metadata), len(skipped)
+    )
+
+    await write_smartreader_index(
+        config=config,
+        newly_processed_article_ids=set(),
+        articles_from_current_run=rebuilt_metadata,
+    )
+    return skipped
 
 
 def _write_archive_page(template, template_data: dict, output_dir: Path) -> None:

@@ -651,3 +651,75 @@ def test_copy_styles_css_also_copies_site_js(tmp_path, monkeypatch):
     for d in (output_dir, nhkeasy_dir):
         assert (d / "site.js").read_text(encoding="utf-8") == "console.log(1);"
         assert (d / "styles.css").read_text(encoding="utf-8") == "body {}"
+
+
+# ---------------------------------------------------------------------------
+# rebuild_all_article_pages
+# ---------------------------------------------------------------------------
+
+
+def test_rebuild_all_article_pages(tmp_path, monkeypatch):
+    """Rebuilds pages from staged files with the current template, renames
+    them to story_<n>.html in the manifest, and leaves articles with missing
+    files (and their old pages) alone."""
+    nhkeasy_dir = tmp_path / "nhkeasy"
+    output_dir = nhkeasy_dir / "html_output"
+    staging_dir = nhkeasy_dir / "staging"
+    smartreader_dir = nhkeasy_dir / "smartreader"
+    for d in (output_dir, staging_dir, smartreader_dir):
+        d.mkdir(parents=True)
+    config = SimpleNamespace(
+        nhkeasy_dir=nhkeasy_dir,
+        html_output_dir=output_dir,
+        staging_dir=staging_dir,
+        smartreader_dir=smartreader_dir,
+    )
+    monkeypatch.setattr(html_runner, "_copy_styles_css", lambda cfg: None)
+
+    good = {
+        "id": "https://nhkeasier.com/story/10070/",
+        "title": "Good",
+        "date": "2026-11-01T02:00:00+00:00",
+        "relative_path": "html_output/Good_https___nhkeasier.com_story_10070_.html",
+        "image_url": None,
+        "kicker": "Old Kicker",
+    }
+    missing = {
+        "id": "https://nhkeasier.com/story/10068/",
+        "title": "Missing",
+        "date": "2026-10-31T02:00:00+00:00",
+        "relative_path": "html_output/Missing_old.html",
+        "image_url": None,
+    }
+    (output_dir / "manifest.json").write_text(
+        json.dumps([good, missing]), encoding="utf-8"
+    )
+
+    stem = "Good_https___nhkeasier.com_story_10070"
+    (staging_dir / f"{stem}.html").write_text(
+        "<html><body><article lang='ja'><p>テスト</p></article></body></html>",
+        encoding="utf-8",
+    )
+    analysis = ArticleAnalysis(
+        title_ja="テスト", title_en="Test", kicker="New Kicker",
+        sentences=[], side_vocab=[],
+    )
+    (smartreader_dir / f"{stem}_analysis.json").write_text(
+        analysis.model_dump_json(), encoding="utf-8"
+    )
+
+    skipped = asyncio.run(html_runner.rebuild_all_article_pages(config))
+
+    assert skipped == ["Missing"]
+    page = output_dir / "story_10070.html"
+    assert page.is_file()
+    assert "furi-control" in page.read_text(encoding="utf-8")
+
+    saved = {e["id"]: e for e in json.loads(
+        (output_dir / "manifest.json").read_text(encoding="utf-8"))}
+    assert saved[good["id"]]["relative_path"] == "html_output/story_10070.html"
+    assert saved[good["id"]]["date"] == good["date"]
+    assert saved[good["id"]]["kicker"] == "New Kicker"
+    assert saved[missing["id"]]["relative_path"] == "html_output/Missing_old.html"
+    assert 'href="html_output/story_10070.html"' in (
+        nhkeasy_dir / "index.html").read_text(encoding="utf-8")

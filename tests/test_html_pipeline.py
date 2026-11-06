@@ -121,3 +121,33 @@ def test_article_filename_uses_story_number():
     assert payload.html_filename == "story_10085.html"
     assert payload.metadata_entry["relative_path"] == "html_output/story_10085.html"
     assert payload.metadata_entry["char_count"] == 3
+
+
+# --- Rebuilding pages from the manifest ---
+
+from html_pipeline import article_file_stem, article_from_manifest_entry
+
+
+def test_article_from_manifest_entry_uses_id_as_link():
+    entry = {"id": "https://nhkeasier.com/story/10068/", "title": "記事",
+             "date": "2026-10-30T11:05:00+00:00", "image_url": "https://x/i.jpg",
+             "relative_path": "html_output/old.html", "kicker": "K"}
+    article = article_from_manifest_entry(entry)
+    assert article == {
+        "id": "https://nhkeasier.com/story/10068/",
+        "link": "https://nhkeasier.com/story/10068/",
+        "title": "記事",
+        "published": "2026-10-30T11:05:00+00:00",
+        "image_url": "https://x/i.jpg",
+    }
+    # The rebuilt page keeps the manifest's date.
+    assert article_publication_date(article, NOW).isoformat() == entry["date"]
+
+
+def test_article_from_manifest_entry_without_id():
+    assert article_from_manifest_entry({"title": "no id"}) is None
+
+
+def test_article_file_stem_matches_staged_names():
+    article = {"id": "https://nhkeasier.com/story/10068/", "link": "x", "title": "大雨 の ニュース"}
+    assert article_file_stem(article) == "大雨_の_ニュース_https___nhkeasier.com_story_10068"
