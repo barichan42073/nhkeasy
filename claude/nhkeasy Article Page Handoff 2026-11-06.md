@@ -34,10 +34,12 @@ page, the manifest and the data repair.
   rsync excludes `feed/`, `staging/`, `smartreader/`, `epubs/`, `audio/`,
   `vocabulary/`, `combined_slowed.mp3` and `*.apkg`.
 - **Public site:** <https://easynhknews.com/>, named **Easy NHK News**.
-- **Deployment (confirmed 2026-11-06):** easynhknews.com is hosted on
-  **Cloudflare**. Deploys are done by hand on the **Oracle VM**: `git pull`,
-  `python3 pipeline.py ...`, then wrangler uploads the HTML to Cloudflare.
-  `run_and_publish.sh`'s rsync to nginx is not the publishing path.
+- **Deployment (confirmed by the user 2026-11-06):** the Ubuntu box and
+  the **Oracle VM are the same machine**. Workflow on the VM: `git pull`, then
+  `run_and_publish.sh` (runs `pipeline.py` and rsyncs to `/var/www/html/` on
+  the VM), then a **manual `wrangler` deploy** to the **Cloudflare Pages**
+  site that hosts easynhknews.com. Wrangler login and a Cloudflare API token
+  are already set up on the VM, and a manual deploy has been run.
 - The furigana/menu work is committed on branch **`feature/indexpage`**
   ("Rework index page; add site header, menu and furigana modes"), not yet
   merged to `main`. Whether the VM has pulled it is still unconfirmed.
@@ -179,18 +181,47 @@ one place.
 
 ## 5. Suggested order for the next chat
 
-1. Confirm the server and deploy questions in section 1.
-2. Add the rebuild-all-article-pages path and regenerate the 35 old pages.
-   Recheck the "banner disappears" report afterwards.
-   **Code done 2026-11-06:** `python3 pipeline.py --rebuild-html` (no LLM or
-   feed calls). It uses `html_runner.rebuild_all_article_pages()` with
+1. **Done 2026-11-06.** Deploy path confirmed (section 1). Exact wrangler
+   command not yet recorded.
+2. **Done 2026-11-06.** `python3 pipeline.py --rebuild-html` (no LLM or feed
+   calls) uses `html_runner.rebuild_all_article_pages()` with
    `html_pipeline.article_from_manifest_entry()` / `article_file_stem()`.
-   Pages are rewritten as `story_<n>.html` and the manifest is repointed.
-   Old title-based files stay on disk. Articles missing staged HTML or
-   analysis JSON (e.g. 10068) are skipped and keep their old page. Still to
-   do: run the tests and the rebuild on the laptop and the VM.
-3. Debug the furigana switching on a new-template page, on desktop and on a
-   touch device or emulation.
-4. Do the responsive layout (section 4).
-5. Rebuild, view locally, then run `run_and_publish.sh` (or the rsync line
-   alone) to publish.
+   Pages are rewritten as `story_<n>.html` and the manifest is repointed; old
+   title-based files stay on disk. On the laptop: 166 tests pass, 35 pages
+   rebuilt, 10068 skipped (no analysis JSON, keeps its old page). The index
+   now links 21 `story_<n>.html` pages, all with the furigana control, so the
+   "banner disappears" report is fixed locally. Commit 41206d9.
+   **Still to do:** on the VM, `git pull`, `--rebuild-html`, wrangler upload.
+3. **Done 2026-11-06.** Furigana switching checked on story 10085 at
+   localhost: buttons and F set the `<html>` class and save the mode; tap
+   toggles `.furi-shown`; at 375px touch emulation `(hover: hover)` is false,
+   so there is no reveal-then-hide on tap. No JS change was needed. The
+   phone problem was the layout: the vocab `aside` was squeezed to 40px and
+   pushed off-screen, making the page 440px wide, so taps missed words.
+   The Sentence Translation panel's ruby follows the same mode (left as is).
+4. **Done 2026-11-06** (commit 051969d), checked in the browser and on the
+   user's iPhone over the home network:
+   - `article.html` inline style: `main, aside { min-width: 0 }`;
+     701–1100px: `aside { flex: 0 0 260px }`, still sticky; ≤700px: one column,
+     vocab below, `aside` not sticky or height-limited.
+   - `styles.css` ≤700px: `.site-head .date { flex-basis: 100% }`, so on the
+     index the menu stays right of the brand instead of moving left of the
+     date (seen at ~450–700px).
+   - Defaults chosen, not yet confirmed: translation panel stays in the
+     article, vocab not collapsible, header not sticky.
+5. **Open idea:** on phones, move the furigana control into the hamburger menu
+   as nhkeasier.com does, leaving only the brand and menu in the header. The
+   cost is two taps to switch mode. Not decided.
+6. Story 10068: reprocess it or special-case it so it gets the new template.
+7. **Next chat's task:** on the Oracle VM, set up a systemd service + timer
+   that runs Mon–Fri: `pipeline.py`, then deploy to Cloudflare Pages,
+   automating the manual wrangler step. Wrangler login and the Cloudflare
+   token already work on the VM. Bring the exact wrangler command and
+   `run_and_publish.sh`.
+
+### Viewing on a phone
+
+`python3 -m http.server 8000` already listens on all interfaces. Find the
+laptop IP with `hostname -I` (192.168.1.108 on 2026-11-06) and open
+`http://<ip>:8000/` on the phone. If it doesn't load, allow the port in `ufw`
+for the LAN only.
