@@ -34,13 +34,13 @@ page, the manifest and the data repair.
   rsync excludes `feed/`, `staging/`, `smartreader/`, `epubs/`, `audio/`,
   `vocabulary/`, `combined_slowed.mp3` and `*.apkg`.
 - **Public site:** <https://easynhknews.com/>, named **Easy NHK News**.
-- **Not recorded here; confirm in the next chat:**
-  - which machine serves easynhknews.com (laptop or Ubuntu box) and how the
-    domain reaches it;
-  - what the `.wrangler/` folder in `~/.local/share/nhkeasy/` is for (it
-    suggests Cloudflare);
-  - whether the 2026-11-05 index changes and the furigana/menu work have been
-    committed and pulled on the server.
+- **Deployment (confirmed 2026-11-06):** easynhknews.com is hosted on
+  **Cloudflare**. Deploys are done by hand on the **Oracle VM**: `git pull`,
+  `python3 pipeline.py ...`, then wrangler uploads the HTML to Cloudflare.
+  `run_and_publish.sh`'s rsync to nginx is not the publishing path.
+- The furigana/menu work is committed on branch **`feature/indexpage`**
+  ("Rework index page; add site header, menu and furigana modes"), not yet
+  merged to `main`. Whether the VM has pulled it is still unconfirmed.
 
 ### Viewing the generated pages locally
 
@@ -182,6 +182,13 @@ one place.
 1. Confirm the server and deploy questions in section 1.
 2. Add the rebuild-all-article-pages path and regenerate the 35 old pages.
    Recheck the "banner disappears" report afterwards.
+   **Code done 2026-11-06:** `python3 pipeline.py --rebuild-html` (no LLM or
+   feed calls). It uses `html_runner.rebuild_all_article_pages()` with
+   `html_pipeline.article_from_manifest_entry()` / `article_file_stem()`.
+   Pages are rewritten as `story_<n>.html` and the manifest is repointed.
+   Old title-based files stay on disk. Articles missing staged HTML or
+   analysis JSON (e.g. 10068) are skipped and keep their old page. Still to
+   do: run the tests and the rebuild on the laptop and the VM.
 3. Debug the furigana switching on a new-template page, on desktop and on a
    touch device or emulation.
 4. Do the responsive layout (section 4).
