@@ -806,3 +806,89 @@ html.furi-tap ruby.furi-shown rt {
         max-width: none;
     }
 }
+
+/* Article page: links under the title, styled as small pills */
+.article-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 10px 0 12px;
+}
+
+.article-link {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: #f0efec;
+    color: var(--ink);
+    font-size: 14px;
+    text-decoration: none;
+}
+
+.article-link:hover {
+    background: #e6e4df;
+}
+
+.article-link:focus-visible,
+.mp3-pill:focus-visible {
+    outline: 2px solid var(--red);
+    outline-offset: 2px;
+}
+
+/* Article page: audio players side by side, stacked on narrow screens */
+.audio-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.audio-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fafaf8;
+}
+
+.audio-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.audio-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mp3-pill {
+    flex: 0 0 auto;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: #f0efec;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+.mp3-pill:hover {
+    background: #e6e4df;
+    color: var(--ink);
+}
+
+.audio-card audio {
+    width: 100%;
+    height: 36px;
+}

@@ -531,7 +531,7 @@ def test_render_interactive_page_back_link_points_to_parent_index():
         raw_html="<article lang='ja'><p>テスト</p></article>",
         analysis=analysis,
     )
-    assert '<a href="../index.html">Back to Articles Index</a>' in rendered
+    assert 'href="../index.html">← Articles</a>' in rendered
 
 
 # ---------------------------------------------------------------------------

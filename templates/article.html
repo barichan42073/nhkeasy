@@ -63,10 +63,10 @@
   <div class="container">
     <main>
       <h1>{{ analysis.title_ja }}</h1>
-      <p>
-        <a href="../index.html">Back to Articles Index</a>
-        {% if article_original_url %} | <a href="{{ article_original_url }}">Original Article</a>{% endif %}
-      </p>
+      <nav class="article-links">
+        <a class="article-link" href="../index.html">← Articles</a>
+        {% if article_original_url %}<a class="article-link" href="{{ article_original_url }}" rel="noopener">Original article ↗</a>{% endif %}
+      </nav>
       <p><em>{{ analysis.title_en }}</em></p>
       {% if image_url %}
       <div class="article-image" style="margin-bottom: 20px;">
@@ -74,20 +74,30 @@
       </div>
       {% endif %}
       {% if original_audio_url or slow_audio_url %}
-      <div class="audio-player-container" style="margin-bottom: 20px;">
+      <div class="audio-row">
           {% if original_audio_url %}
-          <p class="audio-label">NHK audio (<a href="{{ original_audio_url }}">mp3</a>)</p>
-          <audio controls preload="none">
-              <source src="{{ original_audio_url }}" type="audio/mpeg">
-              Your browser does not support the audio element.
-          </audio>
+          <div class="audio-card">
+              <div class="audio-card-head">
+                  <span class="audio-label">Full audio</span>
+                  <a class="mp3-pill" href="{{ original_audio_url }}" download>mp3</a>
+              </div>
+              <audio controls preload="none">
+                  <source src="{{ original_audio_url }}" type="audio/mpeg">
+                  Your browser does not support the audio element.
+              </audio>
+          </div>
           {% endif %}
           {% if slow_audio_url %}
-          <p class="audio-label">Slowed audio: each sentence at normal speed, then 80%, then 70% (<a href="{{ slow_audio_url }}">mp3</a>)</p>
-          <audio controls preload="none">
-              <source src="{{ slow_audio_url }}" type="audio/mpeg">
-              Your browser does not support the audio element.
-          </audio>
+          <div class="audio-card">
+              <div class="audio-card-head">
+                  <span class="audio-label" title="Each sentence plays at normal speed, then 80%, then 70%">Sentence repeat: 1× → 0.8× → 0.7×</span>
+                  <a class="mp3-pill" href="{{ slow_audio_url }}" download>mp3</a>
+              </div>
+              <audio controls preload="none">
+                  <source src="{{ slow_audio_url }}" type="audio/mpeg">
+                  Your browser does not support the audio element.
+              </audio>
+          </div>
           {% endif %}
       </div>
       {% endif %}

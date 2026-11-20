@@ -179,7 +179,7 @@ def test_page_shows_nhk_and_slowed_audio():
     html = payload.html_content
     assert '<source src="https://x/nhk.mp3"' in html
     assert '<source src="../slow_audio/story_10085_slow.mp3"' in html
-    assert html.index("NHK audio") < html.index("Slowed audio")
+    assert html.index("Full audio") < html.index("Sentence repeat")
 
 
 def test_page_without_slowed_audio_shows_only_nhk_audio():
@@ -187,4 +187,4 @@ def test_page_without_slowed_audio_shows_only_nhk_audio():
                "title": "記事", "published": "Wed, 4 Nov 2026 20:10:00 +0900"}
     payload = build_article_html_payload(article, _AUDIO_HTML, _analysis(["テスト"], []), NOW)
     assert '<source src="https://x/nhk.mp3"' in payload.html_content
-    assert "Slowed audio" not in payload.html_content
+    assert "Sentence repeat" not in payload.html_content
