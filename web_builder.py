@@ -175,7 +175,8 @@ def _generate_furigana_html_for_text(japanese_text: str) -> str:
 def render_interactive_page(
     raw_html: str,
     analysis: ArticleAnalysis,
-    slow_audio_path: str | None = None,
+    original_audio_url: str | None = None,
+    slow_audio_url: str | None = None,
     article_original_url: str | None = None,
     image_url: str | None = None,
 ) -> str:
@@ -223,7 +224,8 @@ def render_interactive_page(
         article_body_html=Markup(body_html),
         analysis=analysis_for_rendering,  # Use the modified analysis object for rendering
         vocab_data_json=Markup(json.dumps(vocab_data_for_json, ensure_ascii=False)),
-        slow_audio_path=slow_audio_path,
+        original_audio_url=original_audio_url,
+        slow_audio_url=slow_audio_url,
         article_original_url=article_original_url,
         image_url=image_url,
         paragraph_translation_display_data=paragraph_translation_display_data,  # Pass new data

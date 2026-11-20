@@ -123,6 +123,15 @@ async def _process_single_article(
         state.kindle_sent_count,
     )
 
+    # Audio first, so the article page can link to the slowed MP3.
+    await audio_runner.execute_audio_processing_for_article(
+        article,
+        config,
+        raw_html_content,
+        state.newly_processed_article_ids,
+        state.generated_slow_files,
+    )
+
     if config.generate_html:
         await html_runner.write_article_html_output(
             article,
@@ -138,14 +147,6 @@ async def _process_single_article(
         config,
         analysis,
         state.all_filtered_vocabulary,
-    )
-
-    await audio_runner.execute_audio_processing_for_article(
-        article,
-        config,
-        raw_html_content,
-        state.newly_processed_article_ids,
-        state.generated_slow_files,
     )
 
 

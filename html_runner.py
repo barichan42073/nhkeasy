@@ -23,6 +23,7 @@ from html_pipeline import (
     article_file_stem,
     article_from_manifest_entry,
     build_article_html_payload,
+    slow_audio_filename,
     compute_index_render_data,
 )
 
@@ -120,6 +121,19 @@ def _save_manifest(config: PipelineConfig, manifest_data: list[dict]) -> None:
         logger.exception("Failed to save manifest to %s", manifest_path)
 
 
+def _existing_slow_audio_url(article: dict, config: PipelineConfig) -> str | None:
+    """Page-relative URL of the article's slowed MP3 if the file exists, else
+    None. Pages live in html_output/, a sibling of slow_audio/, so the URL is
+    '../slow_audio/<name>'."""
+    slow_audio_dir = getattr(config, "slow_audio_dir", None)
+    if slow_audio_dir is None:
+        return None
+    filename = slow_audio_filename(article)
+    if not (slow_audio_dir / filename).is_file():
+        return None
+    return f"../{slow_audio_dir.name}/{filename}"
+
+
 async def write_article_html_output(
     article: dict,
     raw_html_content: str,
@@ -135,7 +149,12 @@ async def write_article_html_output(
     """
     article_title = article.get("title", "Untitled Article")
 
-    payload = build_article_html_payload(article, raw_html_content, analysis)
+    payload = build_article_html_payload(
+        article,
+        raw_html_content,
+        analysis,
+        slow_audio_url=_existing_slow_audio_url(article, config),
+    )
     if payload is None:
         logger.error(
             "Skipping HTML output for '%s' because the payload could not be built.",

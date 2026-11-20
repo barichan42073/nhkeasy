@@ -723,3 +723,27 @@ def test_rebuild_all_article_pages(tmp_path, monkeypatch):
     assert saved[missing["id"]]["relative_path"] == "html_output/Missing_old.html"
     assert 'href="html_output/story_10070.html"' in (
         nhkeasy_dir / "index.html").read_text(encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
+# Slowed audio link: only when the file exists
+# ---------------------------------------------------------------------------
+
+
+def test_existing_slow_audio_url(tmp_path):
+    slow_dir = tmp_path / "slow_audio"
+    slow_dir.mkdir()
+    config = SimpleNamespace(slow_audio_dir=slow_dir)
+    article = {"id": "https://nhkeasier.com/story/10085/", "link": "x", "title": "記事"}
+
+    assert html_runner._existing_slow_audio_url(article, config) is None
+    (slow_dir / "story_10085_slow.mp3").write_bytes(b"mp3")
+    assert (
+        html_runner._existing_slow_audio_url(article, config)
+        == "../slow_audio/story_10085_slow.mp3"
+    )
+
+
+def test_existing_slow_audio_url_without_config_dir():
+    article = {"id": "https://nhkeasier.com/story/10085/", "link": "x", "title": "記事"}
+    assert html_runner._existing_slow_audio_url(article, SimpleNamespace()) is None

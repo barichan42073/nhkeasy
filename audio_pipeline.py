@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from config import PipelineConfig
+from html_pipeline import slow_audio_filename
 from utils import find_mp3_url, sanitize_filename
 
 logger = logging.getLogger(__name__)
@@ -95,10 +96,8 @@ def build_audio_task(
     audio_orig_path = config.audio_dir / (
         f"{sanitize_filename(article_title)}_{sanitize_filename(article_id)}.mp3"
     )
-    slowed_filename = (
-        f"{sanitize_filename(article_title)}_{sanitize_filename(article_id)}_slow.mp3"
-    )
-    slowed_path = config.slow_audio_dir / slowed_filename
+    # Same name the article page links to (see html_runner).
+    slowed_path = config.slow_audio_dir / slow_audio_filename(article)
 
     return AudioTask(
         article_id=article_id,

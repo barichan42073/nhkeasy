@@ -151,7 +151,7 @@ def parse_arguments() -> PipelineConfig:
     parser.add_argument(
         "--keep-slow-mp3",
         action="store_true",
-        help="Keep per-article slowed MP3 files.",
+        help="No longer needed: per-article slowed MP3s are always kept (the site links to them).",
     )
     parser.add_argument(
         "--only-slowrecord",

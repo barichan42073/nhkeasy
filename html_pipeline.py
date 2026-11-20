@@ -141,6 +141,16 @@ def article_file_stem(article: dict) -> str:
     return f"{sanitize_filename(article_title)}_{sanitize_filename(article_id)}"
 
 
+def slow_audio_filename(article: dict) -> str:
+    """Filename of the article's slowed MP3 ('story_<n>_slow.mp3'), shared by
+    the audio step that writes it and the page that links to it. Falls back
+    to '<title>_<id>_slow.mp3' if the link has no story number. Pure function."""
+    number = story_number(article)
+    if number is not None:
+        return f"story_{number}_slow.mp3"
+    return f"{article_file_stem(article)}_slow.mp3"
+
+
 def article_from_manifest_entry(entry: dict) -> dict | None:
     """Recreates the article fields the HTML pages need (id, link, title,
     published date, image) from a manifest entry, so pages can be rebuilt
@@ -171,11 +181,15 @@ def build_article_html_payload(
     raw_html_content: str,
     analysis: ArticleAnalysis,
     now: datetime | None = None,
+    slow_audio_url: str | None = None,
 ) -> ArticleHtmlPayload | None:
     """
     Builds the interactive HTML content and associated metadata/vocab
     payloads for a single article. Performs no disk writes and no network
     calls. Returns None if the payload could not be built.
+
+    slow_audio_url is the page-relative URL of the slowed MP3, or None to
+    show only the NHK audio (the caller checks the file exists).
     """
     article_id = article.get("id", article["link"])
     article_title = article.get("title", "Untitled Article")
@@ -189,7 +203,8 @@ def build_article_html_payload(
         html_output = render_interactive_page(
             raw_html=modified_html_content,
             analysis=analysis,
-            slow_audio_path=original_mp3_url,
+            original_audio_url=original_mp3_url,
+            slow_audio_url=slow_audio_url,
             article_original_url=article["link"],
             image_url=article_image_url,
         )

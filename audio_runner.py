@@ -128,8 +128,8 @@ async def combine_and_export_audio(
 ) -> Path | None:
     """
     Imperative-shell function: combines all generated slowed MP3 files and
-    exports the combined audio. Cleans up individual slowed files on
-    success. Delivery (e.g. sending to Kindle) is handled separately by
+    exports the combined audio. The per-article files are kept, since the
+    article pages link to them. Delivery (e.g. sending to Kindle) is handled separately by
     deliver_combined_audio so the orchestrator can sequence it.
     """
     if not generated_slow_files:
@@ -162,13 +162,7 @@ async def combine_and_export_audio(
         logger.info(
             "Created combined MP3: %s", config.combined_audio_path.resolve()
         )
-        if not config.keep_slow_mp3:
-            for slow_path in generated_slow_files:
-                try:
-                    slow_path.unlink(missing_ok=True)
-                except OSError:
-                    logger.exception("Could not remove %s", slow_path.name)
-            logger.info("Removed per-article slowed MP3 files.")
+        # Per-article slowed MP3s are kept: the article pages link to them.
         return config.combined_audio_path
     except (OSError, PydubError):
         logger.exception("Failed to export combined MP3")

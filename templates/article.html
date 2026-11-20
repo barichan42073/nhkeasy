@@ -73,12 +73,22 @@
           <img src="{{ image_url }}" alt="{{ analysis.title_ja }}" style="max-width: 100%; height: auto; border-radius: 6px;">
       </div>
       {% endif %}
-      {% if slow_audio_path %}
+      {% if original_audio_url or slow_audio_url %}
       <div class="audio-player-container" style="margin-bottom: 20px;">
+          {% if original_audio_url %}
+          <p class="audio-label">NHK audio (<a href="{{ original_audio_url }}">mp3</a>)</p>
           <audio controls preload="none">
-              <source src="{{ slow_audio_path }}" type="audio/mpeg">
+              <source src="{{ original_audio_url }}" type="audio/mpeg">
               Your browser does not support the audio element.
           </audio>
+          {% endif %}
+          {% if slow_audio_url %}
+          <p class="audio-label">Slowed audio: each sentence at normal speed, then 80%, then 70% (<a href="{{ slow_audio_url }}">mp3</a>)</p>
+          <audio controls preload="none">
+              <source src="{{ slow_audio_url }}" type="audio/mpeg">
+              Your browser does not support the audio element.
+          </audio>
+          {% endif %}
       </div>
       {% endif %}
       <hr>

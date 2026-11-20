@@ -189,7 +189,7 @@ def test_combine_and_export_audio_returns_none_when_no_files():
     assert result is None
 
 
-def test_combine_and_export_audio_happy_path_removes_slow_files(tmp_path):
+def test_combine_and_export_audio_happy_path_keeps_slow_files(tmp_path):
     combined_audio_path = tmp_path / "combined.mp3"
     config = Mock(combined_audio_path=combined_audio_path, keep_slow_mp3=False)
     slow_file = tmp_path / "slow1.mp3"
@@ -210,7 +210,8 @@ def test_combine_and_export_audio_happy_path_removes_slow_files(tmp_path):
 
     mock_combined.export.assert_called_once_with(str(combined_audio_path), format="mp3")
     assert result == combined_audio_path
-    assert not slow_file.exists()
+    # Kept even without --keep-slow-mp3: the article pages link to them.
+    assert slow_file.exists()
 
 
 def test_combine_and_export_audio_keeps_slow_files_when_configured(tmp_path):

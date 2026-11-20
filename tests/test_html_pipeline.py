@@ -151,3 +151,40 @@ def test_article_from_manifest_entry_without_id():
 def test_article_file_stem_matches_staged_names():
     article = {"id": "https://nhkeasier.com/story/10068/", "link": "x", "title": "大雨 の ニュース"}
     assert article_file_stem(article) == "大雨_の_ニュース_https___nhkeasier.com_story_10068"
+
+
+# --- Slowed audio link ---
+
+from html_pipeline import slow_audio_filename
+
+
+def test_slow_audio_filename_uses_story_number():
+    article = {"id": "https://nhkeasier.com/story/10085/", "link": "x", "title": "記事"}
+    assert slow_audio_filename(article) == "story_10085_slow.mp3"
+
+
+def test_slow_audio_filename_falls_back_to_stem():
+    article = {"id": "abc", "link": "x", "title": "記事"}
+    assert slow_audio_filename(article) == f"{article_file_stem(article)}_slow.mp3"
+
+
+_AUDIO_HTML = "<html><body><audio src='https://x/nhk.mp3'></audio><article lang='ja'><p>テスト</p></article></body></html>"
+
+
+def test_page_shows_nhk_and_slowed_audio():
+    article = {"id": "https://nhkeasier.com/story/10085/", "link": "https://nhkeasier.com/story/10085/",
+               "title": "記事", "published": "Wed, 4 Nov 2026 20:10:00 +0900"}
+    payload = build_article_html_payload(article, _AUDIO_HTML, _analysis(["テスト"], []), NOW,
+                                         slow_audio_url="../slow_audio/story_10085_slow.mp3")
+    html = payload.html_content
+    assert '<source src="https://x/nhk.mp3"' in html
+    assert '<source src="../slow_audio/story_10085_slow.mp3"' in html
+    assert html.index("NHK audio") < html.index("Slowed audio")
+
+
+def test_page_without_slowed_audio_shows_only_nhk_audio():
+    article = {"id": "https://nhkeasier.com/story/10085/", "link": "https://nhkeasier.com/story/10085/",
+               "title": "記事", "published": "Wed, 4 Nov 2026 20:10:00 +0900"}
+    payload = build_article_html_payload(article, _AUDIO_HTML, _analysis(["テスト"], []), NOW)
+    assert '<source src="https://x/nhk.mp3"' in payload.html_content
+    assert "Slowed audio" not in payload.html_content
